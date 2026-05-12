@@ -19,9 +19,8 @@ export default defineApplicationConfig({
         // 开发时不需要代理，因为 VITE_GLOB_API_URL 已经是完整 URL
         // 保留 /upload 代理（文件上传可能需要）
         '/upload': {
-          target: 'https://dghs.gddogootech.com',
+          target: 'http://dghs.gddogootech.com',
           changeOrigin: true,
-          secure: false,
         },
       },
       warmup: {

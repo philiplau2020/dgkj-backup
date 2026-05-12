@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import authController from './controller';
 import { authGuard } from '../../common/middleware/auth.middleware';
 
@@ -57,5 +57,9 @@ router.post('/logout', authGuard, authController.logout);
  *         description: Success
  */
 router.get('/userinfo', authGuard, authController.getUserInfo);
+
+router.get('/perm', authGuard, (req: Request, res: Response) => {
+  res.json({ code: 0, data: [], message: 'ok' });
+});
 
 export default router;

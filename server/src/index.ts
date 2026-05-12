@@ -52,7 +52,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes - 统一使用 /basic-api 前缀
-app.use('/basic-api', authRoutes);
+app.use('/basic-api/auth', authRoutes);
 app.use('/basic-api/sys', sysRoutes);
 app.use('/basic-api/merchant', mchRoutes);  // 商户管理
 app.use('/basic-api/agent', agentRoutes);    // 代理管理
