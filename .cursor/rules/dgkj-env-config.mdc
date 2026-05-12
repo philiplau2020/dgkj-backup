@@ -1,0 +1,110 @@
+---
+description: DGKJ 环境变量配置规范
+alwaysApply: true
+---
+
+# DGKJ 项目环境变量配置规范
+
+## 核心规则
+
+所有 `.env*` 文件必须包含以下环境变量，缺少任何一项都会导致系统故障：
+
+```bash
+# 必需 - 应用标题
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+
+# 必需 - API 基础地址（指向云端后端，完整 URL）
+VITE_GLOB_API_URL=https://dghs.gddogootech.com
+
+# 必需 - Mock 永远禁用
+VITE_USE_MOCK=false
+
+# 必需 - 接口前缀
+VITE_GLOB_API_URL_PREFIX=
+```
+
+## 环境文件模板
+
+### `.env`
+
+```bash
+# 是否开启 Mock - 永远禁用
+VITE_USE_MOCK=false
+
+# App title
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+
+# Basic interface address - 指向云端后端（完整 URL）
+VITE_GLOB_API_URL=https://dghs.gddogootech.com
+
+# File upload address
+VITE_GLOB_UPLOAD_URL=/upload
+
+# Interface prefix
+VITE_GLOB_API_URL_PREFIX=
+```
+
+### `.env.production`
+
+```bash
+# 是否开启 Mock - 永远禁用
+VITE_USE_MOCK=false
+
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+VITE_GLOB_API_URL=https://dghs.gddogootech.com
+VITE_GLOB_API_URL_PREFIX=
+VITE_GLOB_UPLOAD_URL=/upload
+```
+
+## 常见错误
+
+### ❌ 错误 1: 变量缺失导致 "undefined"
+
+```bash
+# ❌ 错误 - 缺少 VITE_GLOB_API_URL
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+# 结果: https://dghs.gddogootech.comundefined/api/auth/login
+```
+
+```bash
+# ✅ 正确
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+VITE_GLOB_API_URL=https://dghs.gddogootech.com
+```
+
+### ❌ 错误 2: 变量名不匹配
+
+```bash
+# ❌ 错误 - 使用了 VITE_APP_TITLE
+VITE_APP_TITLE=DGKJ支付平台
+# 结果: useGlobSetting() 返回 { APP_TITLE: undefined }
+```
+
+```bash
+# ✅ 正确 - 使用 VITE_GLOB_ 前缀
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+```
+
+### ❌ 错误 3: 启用了 Mock 模式
+
+```bash
+# ❌ 错误 - VITE_USE_MOCK=true 会拦截所有请求返回 Mock 数据
+VITE_USE_MOCK=true
+# 结果: 开发时看到假数据，上线后发现功能不工作
+```
+
+```bash
+# ✅ 正确 - 永远禁用 Mock
+VITE_USE_MOCK=false
+```
+
+## 验证步骤
+
+修改 `.env` 文件后必须：
+1. 重启开发服务器（pnpm dev）
+2. 清除浏览器缓存
+3. 硬性刷新 (Ctrl+Shift+R)
+
+## 生产环境说明
+
+生产环境 `.env.production` 中的 `VITE_GLOB_API_URL` 指向云端后端域名，前端构建产物通过 Nginx 部署，Nginx 将 `/basic-api` 请求代理到后端服务。

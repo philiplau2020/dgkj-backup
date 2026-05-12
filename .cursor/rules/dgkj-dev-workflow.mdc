@@ -1,0 +1,209 @@
+---
+description: DGKJ 开发与部署工作流规范
+alwaysApply: true
+---
+
+# DGKJ 开发与部署工作流规范
+
+## 核心原则
+
+**永远不使用 Mock 模式。所有开发、调试、修复都在真实后端上进行。**
+
+## 一、环境配置
+
+### 1.1 `.env` — 开发环境配置
+
+所有 `.env*` 文件必须统一配置，禁用 Mock，指向云端后端：
+
+```bash
+# 是否开启 Mock - 永远禁用
+VITE_USE_MOCK=false
+
+# App title
+VITE_GLOB_APP_TITLE=DGKJ支付平台
+
+# API 基础地址 - 指向云端后端（绝对 URL）
+VITE_GLOB_API_URL=https://dghs.gddogootech.com
+
+# 文件上传地址
+VITE_GLOB_UPLOAD_URL=/upload
+
+# 接口前缀
+VITE_GLOB_API_URL_PREFIX=
+```
+
+### 1.2 环境文件用途
+
+| 文件 | 用途 | 备注 |
+|---|---|---|
+| `.env` | 本地开发 | 禁用 Mock，指向云端后端 |
+| `.env.development` | 显式开发模式 | 同 `.env` |
+| `.env.production` | 生产构建 | 禁用 Mock，指向云端后端 |
+
+### 1.3 axios 配置
+
+- `apiUrl` 使用绝对 URL（`https://dghs.gddogootech.com`）
+- 不需要在 `vite.config.ts` 中配置 `/basic-api` 的 proxy
+- 前端请求路径已包含完整路径（如 `/basic-api/auth/login`）
+- 保留 `/upload` proxy 用于文件上传
+
+## 二、API 响应格式规范
+
+### 2.1 统一格式
+
+后端所有接口必须返回统一格式：
+
+```typescript
+{
+  code: 0,        // 成功
+  message: 'ok',  // 消息
+  data: {...}     // 数据（可为 null）
+}
+```
+
+错误响应：
+```typescript
+{
+  code: 401,        // 未登录 / 用户名密码错误
+  code: 403,        // 无权限
+  code: 404,        // 资源不存在
+  code: 500,        // 服务器错误
+  message: '错误描述',
+  data: null
+}
+```
+
+### 2.2 禁止使用 HTTP 状态码作为业务 code
+
+- ❌ 禁止：`res.status(401).json({ message: '...' })` — 会导致前端 axios 触发网络错误而非业务错误
+- ✅ 正确：`res.json({ code: 401, message: '...', data: null })` — 用业务 code 而非 HTTP 状态码
+
+### 2.3 前端 axios 兼容性
+
+前端 `axios/index.ts` 已配置为兼容多种后端格式：
+- `code === 0` → 成功
+- `code === 200` → 成功（兼容部分后端）
+- `code === 401` → 视为超时，执行登出
+
+### 2.4 API 路径命名
+
+统一使用小写 + 下划线风格：
+- ✅ `/basic-api/auth/userinfo`（小写 u）
+- ❌ `/basic-api/auth/userInfo`（驼峰）
+
+## 三、开发流程
+
+### 3.1 日常开发步骤
+
+```
+1. 修改代码（前端 / server）
+2. 本地测试（浏览器访问 https://dghs.gddogootech.com 或 localhost:5174）
+3. 自测通过后，立即部署到云端
+4. 验证云端功能正常
+```
+
+### 3.2 云端部署步骤
+
+**方式 A：通过 GitHub Actions（推荐）**
+
+```bash
+git add .
+git commit -m "fix: 修复登录问题"
+git push
+```
+
+GitHub Actions 会自动：
+1. 构建后端 `server/`
+2. 部署到 `/opt/dgkj-server/` 并重启 PM2
+3. 构建前端
+4. 部署到 `/www/dgkj/admin/`
+
+**方式 B：手动部署**
+
+```bash
+# 后端
+scp -r server/ root@120.78.7.180:/opt/dgkj-server/
+ssh root@120.78.7.180 "cd /opt/dgkj-server && npm install && npm run build && pm2 restart dgkj-server"
+
+# 前端
+npm run build
+scp -r dist/* root@120.78.7.180:/www/dgkj/admin/
+```
+
+### 3.3 数据库初始化
+
+首次部署或数据库丢失时，需要初始化数据：
+
+```bash
+ssh root@120.78.7.180
+cd /opt/dgkj-server
+npx ts-node src/database/seed.ts
+```
+
+默认账号：`admin` / `admin123`
+
+## 四、后端重启命令
+
+```bash
+# SSH 到服务器后
+pm2 restart dgkj-server
+
+# 查看日志
+pm2 logs dgkj-server --lines 50
+
+# 查看状态
+pm2 status
+
+# 查看 PM2 是否运行
+pm2 list
+```
+
+## 五、故障排查
+
+### 5.1 登录 500 错误
+
+```bash
+# 检查后端是否运行
+ssh root@120.78.7.180 "pm2 status"
+
+# 检查后端日志
+ssh root@120.78.7.180 "pm2 logs dgkj-server --lines 30"
+
+# 检查数据库连接
+ssh root@120.78.7.180 "pm2 logs dgkj-server" | grep -i "database\|error"
+```
+
+### 5.2 CORS 错误
+
+检查云端 `.env` 中 `CORS_ORIGIN` 是否包含前端域名：
+```
+CORS_ORIGIN=https://dghs.gddogootech.com
+```
+
+### 5.3 前端请求 404
+
+1. 检查 nginx 是否正常运行：`systemctl status nginx`
+2. 检查 nginx 日志：`tail -f /var/log/nginx/dgkj-admin.access.log`
+3. 检查 `/basic-api/` 代理是否正确配置
+
+### 5.4 后端改了代码不生效
+
+后端代码改动后必须重启：
+```bash
+pm2 restart dgkj-server
+```
+
+前端代码改动后必须重新构建：
+```bash
+npm run build
+```
+
+## 六、快速验证清单
+
+部署完成后，在浏览器中验证：
+
+- [ ] 访问 https://dghs.gddogootech.com
+- [ ] 输入 `admin` / `admin123` 登录
+- [ ] 登录成功，跳转到仪表盘
+- [ ] 左侧菜单显示完整
+- [ ] 点击各菜单页面正常加载数据

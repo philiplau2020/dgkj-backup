@@ -1,0 +1,51 @@
+---
+description: DGKJ API 路径一致性规范（已废弃 Mock）
+alwaysApply: true
+---
+
+# Mock 与 API 路径一致性规范（历史文档，仅供参考）
+
+> **⚠️ 注意：项目已全面禁用 Mock，所有开发使用真实后端。此文档仅作历史参考。**
+
+## 背景
+
+2026-05-12 之前，项目使用 Mock 模式进行开发，存在大量路径不一致问题，导致菜单页面 404 错误。
+
+## 已修复的路径对照表（仅供参考）
+
+| 模块 | config.ts 路径 | 正确路径 |
+|---|---|---|
+| 商户列表 | `/basic-api/mch/list` | `/basic-api/merchant/list` |
+| 订单列表 | `/basic-api/trade/order/list` | `/basic-api/order/list` |
+| 账户列表 | `/basic-api/finance/account/list` | `/basic-api/account/list` |
+| 交易统计 | `/basic-api/statistics/dashboard` | `/basic-api/stat/trade/today` |
+| 代理管理 | `/basic-api/agent/review` | `/basic-api/agent/audit` |
+| 通道管理 | `/basic-api/channel/channel/list` | `/basic-api/channel/mch/list` |
+
+## 当前实际 API 路径（来自 server/src/index.ts）
+
+| 模块 | Mock URL 前缀 |
+|---|-----|
+| 用户登录 | `/basic-api/auth/login` |
+| 商户 | `/basic-api/merchant/` |
+| 代理 | `/basic-api/agent/` |
+| 交易 | `/basic-api/order/`, `/basic-api/refund/` |
+| 财务 | `/basic-api/account/`, `/basic-api/finance/` |
+| 通道 | `/basic-api/channel/`, `/basic-api/pool/` |
+| 兴业 | `/basic-api/citic/` |
+| 统计 | `/basic-api/stat/` |
+
+## 排查 404 错误
+
+当出现 "未找到该资源" 错误时：
+
+1. **检查浏览器 Network 面板** — 查看请求的完整 URL
+2. **对比 `server/src/index.ts`** — 确认后端路由是否注册
+3. **对比 `src/api/config.ts`** — 确认前端请求路径与后端一致
+4. **使用 Grep 搜索** — 在 `server/src/` 目录搜索对应路径
+
+```bash
+# 示例：检查商户列表的路径
+rg "merchant" server/src/
+rg "mch/list" src/api/config.ts
+```

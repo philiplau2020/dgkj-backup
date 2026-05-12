@@ -1,0 +1,15 @@
+{
+  "name": "dgkj-pay-sdk",
+  "version": "1.0.0",
+  "description": "DGKJ Open Platform SDK for Node.js",
+  "main": "dgkj-pay-sdk.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": ["payment", "wechat", "alipay", "dgkj", "pay"],
+  "author": "DGKJ",
+  "license": "MIT",
+  "peerDependencies": {
+    "axios": ">=0.18.0"
+  }
+}
