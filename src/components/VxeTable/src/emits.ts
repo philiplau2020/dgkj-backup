@@ -1,4 +1,4 @@
-import tableEmits from 'vxe-table/es/table/src/emits';
+import { tableEmits } from 'vxe-table/es/table/src/emits';
 
 export const basicEmits = [
   ...tableEmits,
