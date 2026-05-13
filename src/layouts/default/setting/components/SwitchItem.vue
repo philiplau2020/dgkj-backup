@@ -40,7 +40,7 @@
   const { t } = useI18n();
 
   const getBindValue = computed(() => {
-    return props.def ? { checked: props.def } : {};
+    return { checked: props.def };
   });
 
   const handleChange: SwitchProps['onChange'] = (val) => {

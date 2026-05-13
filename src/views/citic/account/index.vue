@@ -1,100 +1,67 @@
 <template>
   <div class="citic-account">
     <Card>
-      <!-- 账户概览 -->
-      <Row :gutter="24" class="account-overview">
+      <!-- 搜索 -->
+      <Form layout="inline" :model="searchForm" class="search-form">
+        <FormItem label="账户编号">
+          <Input v-model:value="searchForm.accountNo" placeholder="请输入账户编号" allow-clear style="width: 160px" />
+        </FormItem>
+        <FormItem label="账户名称">
+          <Input v-model:value="searchForm.accountName" placeholder="请输入账户名称" allow-clear style="width: 150px" />
+        </FormItem>
+        <FormItem label="账户类型">
+          <Select v-model:value="searchForm.accountType" allow-clear style="width: 120px">
+            <SelectOption :value="1">个人账户</SelectOption>
+            <SelectOption :value="2">企业账户</SelectOption>
+          </Select>
+        </FormItem>
+        <FormItem label="状态">
+          <Select v-model:value="searchForm.status" allow-clear style="width: 100px">
+            <SelectOption :value="1">启用</SelectOption>
+            <SelectOption :value="0">停用</SelectOption>
+          </Select>
+        </FormItem>
+        <FormItem>
+          <Space>
+            <Button type="primary" @click="handleSearch">
+              <template #icon><SearchOutlined /></template>
+              查询
+            </Button>
+            <Button @click="handleReset">重置</Button>
+          </Space>
+        </FormItem>
+      </Form>
+
+      <!-- 统计卡片 -->
+      <Row :gutter="16" class="stat-row">
         <Col :span="6">
-          <Card size="small" class="account-card">
-            <Statistic 
-              title="账户余额" 
-              :value="Number(accountInfo.balance)" 
-              :precision="2" 
-              prefix="¥" 
-              :value-style="{ color: '#f5222d', fontSize: '24px' }" 
-            />
-            <div class="card-footer">
-              <span class="label">可用:</span>
-              <span class="value">¥{{ Number(accountInfo.availableBalance).toFixed(2) }}</span>
-            </div>
+          <Card size="small">
+            <Statistic title="账户总数" :value="stats.totalCount" :value-style="{ color: '#1890ff' }" />
           </Card>
         </Col>
         <Col :span="6">
-          <Card size="small" class="account-card">
-            <Statistic 
-              title="今日收入" 
-              :value="Number(stats.todayIncome)" 
-              :precision="2" 
-              prefix="¥" 
-              :value-style="{ color: '#52c41a', fontSize: '24px' }" 
-            />
-            <div class="card-footer">
-              <span class="label">今日支出:</span>
-              <span class="value expense">¥{{ Number(stats.todayExpense).toFixed(2) }}</span>
-            </div>
+          <Card size="small">
+            <Statistic title="总余额" :value="Number(stats.totalBalance)" :precision="2" prefix="¥" :value-style="{ color: '#f5222d', fontSize: '20px' }" />
           </Card>
         </Col>
         <Col :span="6">
-          <Card size="small" class="account-card">
-            <Statistic 
-              title="本月收入" 
-              :value="Number(stats.monthIncome)" 
-              :precision="2" 
-              prefix="¥" 
-              :value-style="{ color: '#1890ff', fontSize: '24px' }" 
-            />
-            <div class="card-footer">
-              <span class="label">本月支出:</span>
-              <span class="value expense">¥{{ Number(stats.monthExpense).toFixed(2) }}</span>
-            </div>
+          <Card size="small">
+            <Statistic title="总可用余额" :value="Number(stats.totalAvailable)" :precision="2" prefix="¥" :value-style="{ color: '#52c41a', fontSize: '20px' }" />
           </Card>
         </Col>
         <Col :span="6">
-          <Card size="small" class="account-card">
-            <div class="freeze-info">
-              <div class="freeze-item">
-                <span class="label">冻结金额</span>
-                <span class="value frozen">¥{{ Number(accountInfo.frozenBalance).toFixed(2) }}</span>
-              </div>
-              <div class="freeze-item">
-                <span class="label">账户状态</span>
-                <Badge :status="accountInfo.status === 1 ? 'success' : 'error'" />
-                <span class="value">{{ accountInfo.statusName }}</span>
-              </div>
-            </div>
+          <Card size="small">
+            <Statistic title="今日收入" :value="Number(stats.todayIncome)" :precision="2" prefix="¥" :value-style="{ color: '#722ed1' }" />
           </Card>
         </Col>
       </Row>
 
-      <!-- 账户详情 -->
-      <Descriptions title="账户信息" bordered :column="3" class="account-desc">
-        <DescriptionsItem label="账户号">{{ accountInfo.accountNo }}</DescriptionsItem>
-        <DescriptionsItem label="账户名称">{{ accountInfo.accountName }}</DescriptionsItem>
-        <DescriptionsItem label="账户类型">
-          <Tag :color="accountInfo.accountType === 1 ? 'blue' : 'green'">
-            {{ accountInfo.accountTypeName }}
-          </Tag>
-        </DescriptionsItem>
-        <DescriptionsItem label="开户行">{{ accountInfo.bankName }}</DescriptionsItem>
-        <DescriptionsItem label="银行卡号">{{ accountInfo.cardNo }}</DescriptionsItem>
-        <DescriptionsItem label="账户状态">
-          <Badge :status="accountInfo.status === 1 ? 'success' : 'error'" :text="accountInfo.statusName" />
-        </DescriptionsItem>
-      </Descriptions>
-
-      <!-- 操作按钮 -->
-      <div class="action-buttons">
+      <!-- 工具栏 -->
+      <div class="table-toolbar">
         <Space>
-          <Button type="primary" @click="openRechargeModal" :disabled="accountInfo.status !== 1">
+          <Button type="primary" @click="openRegisterModal">
             <template #icon><PlusOutlined /></template>
-            充值
-          </Button>
-          <Button @click="openWithdrawModal" :disabled="accountInfo.status !== 1">
-            <template #icon><MinusOutlined /></template>
-            取款
-          </Button>
-          <Button @click="openTransferModal" :disabled="accountInfo.status !== 1">
-            <template #icon><SwapOutlined /></template>
-            转账
+            开户
           </Button>
           <Button @click="handleRefresh">
             <template #icon><ReloadOutlined /></template>
@@ -103,74 +70,161 @@
         </Space>
       </div>
 
-      <!-- 账户变动记录 -->
-      <Card title="账户变动记录" class="record-card">
-        <template #extra>
-          <Space>
-            <Select v-model:value="recordType" style="width: 120px" @change="fetchRecords">
-              <SelectOption value="">全部类型</SelectOption>
-              <SelectOption value="1">收入</SelectOption>
-              <SelectOption value="2">支出</SelectOption>
-            </Select>
-            <RangePicker v-model:value="dateRange" @change="fetchRecords" style="width: 240px" />
-          </Space>
-        </template>
-        
-        <Table
-          :data-source="records"
-          :columns="columns"
-          :loading="loading"
-          :pagination="pagination"
-          @change="handleTableChange"
-          row-key="id"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'recordNo'">
-              <span class="record-no">{{ record.recordNo }}</span>
-            </template>
-            <template v-else-if="column.key === 'type'">
-              <Tag :color="record.type === 1 ? 'success' : 'error'">
-                {{ record.typeName }}
-              </Tag>
-            </template>
-            <template v-else-if="column.key === 'amount'">
-              <span :class="record.type === 1 ? 'income' : 'expense'">
-                {{ record.type === 1 ? '+' : '-' }}¥{{ record.amount }}
-              </span>
-            </template>
-            <template v-else-if="column.key === 'balanceAfter'">
-              <span class="balance">¥{{ record.balanceAfter }}</span>
-            </template>
+      <!-- 账户列表 -->
+      <Table
+        :data-source="dataSource"
+        :columns="columns"
+        :loading="loading"
+        :pagination="pagination"
+        @change="handleTableChange"
+        row-key="id"
+        :scroll="{ x: 1500 }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'accountType'">
+            <Tag :color="record.accountType === 1 ? 'blue' : 'green'">
+              {{ record.accountType === 1 ? '个人账户' : '企业账户' }}
+            </Tag>
           </template>
-        </Table>
-      </Card>
+          <template v-else-if="column.key === 'balance'">
+            <span class="amount-text">¥{{ Number(record.balance || 0).toFixed(2) }}</span>
+          </template>
+          <template v-else-if="column.key === 'availableBalance'">
+            <span class="available-text">¥{{ Number(record.availableBalance || 0).toFixed(2) }}</span>
+          </template>
+          <template v-else-if="column.key === 'frozenBalance'">
+            <span class="frozen-text">¥{{ Number(record.frozenBalance || 0).toFixed(2) }}</span>
+          </template>
+          <template v-else-if="column.key === 'status'">
+            <Switch :checked="record.status === 1" @change="(checked) => handleToggleStatus(record, checked)" />
+            <span style="margin-left: 8px">{{ record.status === 1 ? '启用' : '停用' }}</span>
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <Space>
+              <Button type="link" size="small" @click="openDetailModal(record)">详情</Button>
+              <Button type="link" size="small" @click="openEditModal(record)">编辑</Button>
+            </Space>
+          </template>
+        </template>
+      </Table>
     </Card>
 
-    <!-- 充值弹窗 -->
-    <Modal 
-      v-model:open="rechargeVisible" 
-      title="账户充值" 
-      width="500px"
-      @ok="handleRecharge"
+    <!-- 开户/编辑弹窗 -->
+    <Modal
+      v-model:open="modalVisible"
+      :title="isEdit ? '编辑账户' : '开户'"
+      width="600px"
+      @ok="handleSubmit"
       :confirm-loading="submitLoading"
     >
+      <Form :model="formData" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }" :rules="formRules" ref="formRef">
+        <FormItem label="账户编号" name="accountNo" v-if="!isEdit">
+          <Input v-model:value="formData.accountNo" placeholder="请输入账户编号" />
+        </FormItem>
+        <FormItem label="账户名称" name="accountName">
+          <Input v-model:value="formData.accountName" placeholder="请输入账户名称" />
+        </FormItem>
+        <FormItem label="账户类型" name="accountType">
+          <RadioGroup v-model:value="formData.accountType">
+            <Radio :value="1">个人账户</Radio>
+            <Radio :value="2">企业账户</Radio>
+          </RadioGroup>
+        </FormItem>
+        <FormItem label="账户属性" name="accountAttr">
+          <Select v-model:value="formData.accountAttr" style="width: 100%">
+            <SelectOption :value="1">普通账户</SelectOption>
+            <SelectOption :value="2">过渡账户</SelectOption>
+            <SelectOption :value="3">归集账户</SelectOption>
+          </Select>
+        </FormItem>
+        <FormItem label="关联商户号">
+          <Input v-model:value="formData.mchNo" placeholder="请输入关联商户号(选填)" />
+        </FormItem>
+        <FormItem label="关联代理商号">
+          <Input v-model:value="formData.agentNo" placeholder="请输入关联代理商号(选填)" />
+        </FormItem>
+        <FormItem label="备注">
+          <Input v-model:value="formData.remark" placeholder="请输入备注" />
+        </FormItem>
+      </Form>
+    </Modal>
+
+    <!-- 详情弹窗 -->
+    <Modal v-model:open="detailVisible" title="账户详情" width="700px" :footer="null">
+      <Descriptions :column="2" bordered v-if="currentRecord">
+        <DescriptionsItem label="账户编号" :span="2">
+          <span class="account-no">{{ currentRecord.accountNo }}</span>
+        </DescriptionsItem>
+        <DescriptionsItem label="账户名称">{{ currentRecord.accountName }}</DescriptionsItem>
+        <DescriptionsItem label="账户类型">
+          <Tag :color="currentRecord.accountType === 1 ? 'blue' : 'green'">
+            {{ currentRecord.accountType === 1 ? '个人账户' : '企业账户' }}
+          </Tag>
+        </DescriptionsItem>
+        <DescriptionsItem label="账户属性">
+          <Tag v-if="currentRecord.accountAttr === 1">普通账户</Tag>
+          <Tag v-else-if="currentRecord.accountAttr === 2">过渡账户</Tag>
+          <Tag v-else>归集账户</Tag>
+        </DescriptionsItem>
+        <DescriptionsItem label="总余额">
+          <span class="amount-text">¥{{ Number(currentRecord.balance || 0).toFixed(2) }}</span>
+        </DescriptionsItem>
+        <DescriptionsItem label="可用余额">
+          <span class="available-text">¥{{ Number(currentRecord.availableBalance || 0).toFixed(2) }}</span>
+        </DescriptionsItem>
+        <DescriptionsItem label="冻结金额">
+          <span class="frozen-text">¥{{ Number(currentRecord.frozenBalance || 0).toFixed(2) }}</span>
+        </DescriptionsItem>
+        <DescriptionsItem label="待结算金额">
+          <span>¥{{ Number(currentRecord.pendingBalance || 0).toFixed(2) }}</span>
+        </DescriptionsItem>
+        <DescriptionsItem label="关联商户号">{{ currentRecord.mchNo || '-' }}</DescriptionsItem>
+        <DescriptionsItem label="关联代理商号">{{ currentRecord.agentNo || '-' }}</DescriptionsItem>
+        <DescriptionsItem label="状态">
+          <Badge :status="currentRecord.status === 1 ? 'success' : 'error'" :text="currentRecord.status === 1 ? '启用' : '停用'" />
+        </DescriptionsItem>
+        <DescriptionsItem label="审核状态">
+          <Tag v-if="currentRecord.auditStatus === 0" color="orange">待审核</Tag>
+          <Tag v-else-if="currentRecord.auditStatus === 1" color="green">已通过</Tag>
+          <Tag v-else color="red">已拒绝</Tag>
+        </DescriptionsItem>
+        <DescriptionsItem label="创建时间">{{ currentRecord.createTime }}</DescriptionsItem>
+        <DescriptionsItem label="更新时间">{{ currentRecord.updateTime || '-' }}</DescriptionsItem>
+        <DescriptionsItem label="备注" :span="2">{{ currentRecord.remark || '-' }}</DescriptionsItem>
+      </Descriptions>
+
+      <!-- 账户操作 -->
+      <Divider>账户操作</Divider>
+      <Space>
+        <Button type="primary" @click="openRechargeModal" :disabled="currentRecord.status !== 1">
+          <template #icon><PlusOutlined /></template>
+          充值
+        </Button>
+        <Button @click="openWithdrawModal" :disabled="currentRecord.status !== 1">
+          <template #icon><MinusOutlined /></template>
+          取款
+        </Button>
+        <Button @click="openTransferModal" :disabled="currentRecord.status !== 1">
+          <template #icon><SwapOutlined /></template>
+          转账
+        </Button>
+        <Button @click="openRecordModal" :disabled="currentRecord.status !== 1">
+          <template #icon><FileTextOutlined /></template>
+          查看流水
+        </Button>
+      </Space>
+    </Modal>
+
+    <!-- 充值弹窗 -->
+    <Modal v-model:open="rechargeVisible" title="账户充值" width="450px" @ok="handleRecharge" :confirm-loading="submitLoading">
       <Alert message="充值说明" type="info" show-icon class="mb-16">
-        <template #description>
-          充值金额将即时到账，充值手续费为0.00%。
-        </template>
+        <template #description>充值金额将即时到账，充值手续费为0.00%。</template>
       </Alert>
       <Form :model="rechargeForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <FormItem label="账户号">{{ accountInfo.accountNo }}</FormItem>
-        <FormItem label="账户名称">{{ accountInfo.accountName }}</FormItem>
+        <FormItem label="账户编号">{{ currentRecord?.accountNo }}</FormItem>
+        <FormItem label="账户名称">{{ currentRecord?.accountName }}</FormItem>
         <FormItem label="充值金额" required>
-          <InputNumber 
-            v-model:value="rechargeForm.amount" 
-            :min="0.01" 
-            :max="999999999"
-            :precision="2" 
-            style="width: 100%" 
-            placeholder="请输入充值金额"
-          />
+          <InputNumber v-model:value="rechargeForm.amount" :min="0.01" :max="999999999" :precision="2" style="width: 100%" placeholder="请输入充值金额" />
         </FormItem>
         <FormItem label="备注">
           <Input v-model:value="rechargeForm.remark" placeholder="请输入备注(选填)" />
@@ -179,32 +233,17 @@
     </Modal>
 
     <!-- 取款弹窗 -->
-    <Modal 
-      v-model:open="withdrawVisible" 
-      title="账户取款" 
-      width="500px"
-      @ok="handleWithdraw"
-      :confirm-loading="submitLoading"
-    >
+    <Modal v-model:open="withdrawVisible" title="账户取款" width="450px" @ok="handleWithdraw" :confirm-loading="submitLoading">
       <Alert message="取款说明" type="warning" show-icon class="mb-16">
-        <template #description>
-          取款金额将原路退回，预计1-3个工作日到账。
-        </template>
+        <template #description>取款金额将原路退回，预计1-3个工作日到账。</template>
       </Alert>
       <Form :model="withdrawForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <FormItem label="账户号">{{ accountInfo.accountNo }}</FormItem>
+        <FormItem label="账户编号">{{ currentRecord?.accountNo }}</FormItem>
         <FormItem label="可用余额">
-          <span class="available-balance">¥{{ Number(accountInfo.availableBalance).toFixed(2) }}</span>
+          <span class="available-text">¥{{ Number(currentRecord?.availableBalance || 0).toFixed(2) }}</span>
         </FormItem>
         <FormItem label="取款金额" required>
-          <InputNumber 
-            v-model:value="withdrawForm.amount" 
-            :min="0.01" 
-            :max="Number(accountInfo.availableBalance)" 
-            :precision="2" 
-            style="width: 100%" 
-            placeholder="请输入取款金额"
-          />
+          <InputNumber v-model:value="withdrawForm.amount" :min="0.01" :max="Number(currentRecord?.availableBalance || 0)" :precision="2" style="width: 100%" placeholder="请输入取款金额" />
         </FormItem>
         <FormItem label="备注">
           <Input v-model:value="withdrawForm.remark" placeholder="请输入备注(选填)" />
@@ -213,95 +252,59 @@
     </Modal>
 
     <!-- 转账弹窗 -->
-    <Modal 
-      v-model:open="transferVisible" 
-      title="账户转账" 
-      width="500px"
-      @ok="handleTransfer"
-      :confirm-loading="submitLoading"
-    >
+    <Modal v-model:open="transferVisible" title="账户转账" width="500px" @ok="handleTransfer" :confirm-loading="submitLoading">
       <Form :model="transferForm" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <FormItem label="转出账户">
-          <span class="from-account">{{ accountInfo.accountNo }} ({{ accountInfo.accountName }})</span>
+          <span>{{ currentRecord?.accountNo }} ({{ currentRecord?.accountName }})</span>
         </FormItem>
         <FormItem label="转入账户" required>
-          <Select 
-            v-model:value="transferForm.toAccountType" 
-            style="width: 100%"
-            placeholder="请选择转入账户类型"
-          >
-            <SelectOption value="citic">中信银行账户</SelectOption>
-            <SelectOption value="bank">银行卡</SelectOption>
-          </Select>
-        </FormItem>
-        <FormItem label="目标账户" required v-if="transferForm.toAccountType === 'citic'">
-          <Select v-model:value="transferForm.toAccount" style="width: 100%" placeholder="请选择目标账户">
-            <SelectOption v-for="card in cardList" :key="card.id" :value="card.cardNo">
-              {{ card.accountName }} - {{ card.cardNo }}
+          <Select v-model:value="transferForm.toAccountNo" placeholder="请选择目标账户" show-search style="width: 100%">
+            <SelectOption v-for="acc in accountList.filter(a => a.accountNo !== currentRecord?.accountNo)" :key="acc.accountNo" :value="acc.accountNo">
+              {{ acc.accountName }} ({{ acc.accountNo }})
             </SelectOption>
           </Select>
         </FormItem>
-        <FormItem label="目标账户" required v-else>
-          <Input v-model:value="transferForm.bankCardNo" placeholder="请输入银行卡号" />
-        </FormItem>
         <FormItem label="转账金额" required>
-          <InputNumber 
-            v-model:value="transferForm.amount" 
-            :min="0.01" 
-            :precision="2" 
-            style="width: 100%" 
-            placeholder="请输入转账金额"
-          />
+          <InputNumber v-model:value="transferForm.amount" :min="0.01" :precision="2" style="width: 100%" placeholder="请输入转账金额" />
         </FormItem>
         <FormItem label="备注">
           <Input v-model:value="transferForm.remark" placeholder="请输入备注(选填)" />
         </FormItem>
       </Form>
     </Modal>
+
+    <!-- 流水弹窗 -->
+    <Modal v-model:open="recordVisible" title="账户流水" width="900px" :footer="null">
+      <Table :data-source="records" :columns="recordColumns" :loading="recordLoading" :pagination="recordPagination" row-key="id">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'bizType'">
+            <Tag :color="getBizTypeColor(record.bizType)">{{ record.bizTypeName }}</Tag>
+          </template>
+          <template v-else-if="column.key === 'amount'">
+            <span :class="record.amount > 0 ? 'income-text' : 'expense-text'">
+              {{ record.amount > 0 ? '+' : '' }}¥{{ record.amount }}
+            </span>
+          </template>
+        </template>
+      </Table>
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { 
-  Card, Row, Col, Statistic, Descriptions, DescriptionsItem, Tag, Badge, 
-  Button, Space, Table, Modal, Form, FormItem, InputNumber, Input, 
-  Select, SelectOption, RangePicker, Alert, message 
+import {
+  Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space,
+  Tag, Badge, Row, Col, Statistic, Modal, Descriptions, DescriptionsItem,
+  InputNumber, Switch, message, Alert, Divider, RadioGroup, Radio
 } from 'ant-design-vue';
-import { PlusOutlined, MinusOutlined, SwapOutlined, ReloadOutlined } from '@ant-design/icons-vue';
-import { getCiticAccountInfo, getAccountRecords, getAccountStats, getCardList } from '@/api/citic';
+import { PlusOutlined, SearchOutlined, ReloadOutlined, MinusOutlined, SwapOutlined, FileTextOutlined } from '@ant-design/icons-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const submitLoading = ref(false);
-const records = ref<any[]>([]);
-const cardList = ref<any[]>([]);
-
-const accountInfo = reactive({
-  accountNo: '-',
-  accountName: '-',
-  accountType: 1,
-  accountTypeName: '-',
-  balance: '0.00',
-  frozenBalance: '0.00',
-  availableBalance: '0.00',
-  cardNo: '-',
-  bankName: '-',
-  status: 1,
-  statusName: '-',
-});
-
-const stats = reactive({
-  todayIncome: '0.00',
-  todayExpense: '0.00',
-  todayNet: '0.00',
-  monthIncome: '0.00',
-  monthExpense: '0.00',
-  monthNet: '0.00',
-});
-
-const recordType = ref('');
-const dateRange = ref<[any, any] | null>(null);
-
+const dataSource = ref<any[]>([]);
+const accountList = ref<any[]>([]);
 const pagination = reactive({
   current: 1,
   pageSize: 10,
@@ -311,95 +314,206 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条`,
 });
 
+const searchForm = reactive({
+  accountNo: '',
+  accountName: '',
+  accountType: undefined as number | undefined,
+  status: undefined as number | undefined,
+});
+
+const stats = reactive({
+  totalCount: 0,
+  totalBalance: '0.00',
+  totalAvailable: '0.00',
+  todayIncome: '0.00',
+});
+
 const columns = [
-  { title: '记录编号', dataIndex: 'recordNo', key: 'recordNo', width: 180 },
-  { title: '变动类型', key: 'type', width: 100 },
-  { title: '变动金额', key: 'amount', width: 150 },
-  { title: '变动前余额', dataIndex: 'balanceBefore', key: 'balanceBefore', width: 130, customRender: ({ text }) => `¥${text}` },
-  { title: '变动后余额', key: 'balanceAfter', width: 130 },
-  { title: '备注', dataIndex: 'remark', key: 'remark', ellipsis: true },
-  { title: '时间', dataIndex: 'createdAt', key: 'createdAt', width: 170 },
+  { title: '账户编号', dataIndex: 'accountNo', key: 'accountNo', width: 180 },
+  { title: '账户名称', dataIndex: 'accountName', key: 'accountName', width: 150 },
+  { title: '账户类型', key: 'accountType', width: 100 },
+  { title: '总余额', key: 'balance', width: 130 },
+  { title: '可用余额', key: 'availableBalance', width: 130 },
+  { title: '冻结金额', key: 'frozenBalance', width: 120 },
+  { title: '状态', key: 'status', width: 120 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 170 },
+  { title: '操作', key: 'action', width: 100 },
 ];
 
+const modalVisible = ref(false);
+const isEdit = ref(false);
+const formRef = ref();
+const currentRecord = ref<any>(null);
+const detailVisible = ref(false);
+
+const formData = reactive({
+  accountNo: '',
+  accountName: '',
+  accountType: 1,
+  accountAttr: 1,
+  mchNo: '',
+  agentNo: '',
+  remark: '',
+});
+
+const formRules = {
+  accountNo: [{ required: true, message: '请输入账户编号' }],
+  accountName: [{ required: true, message: '请输入账户名称' }],
+  accountType: [{ required: true, message: '请选择账户类型' }],
+};
+
+// 充值
 const rechargeVisible = ref(false);
 const rechargeForm = reactive({ amount: 0, remark: '' });
 
+// 取款
 const withdrawVisible = ref(false);
 const withdrawForm = reactive({ amount: 0, remark: '' });
 
+// 转账
 const transferVisible = ref(false);
-const transferForm = reactive({ 
-  toAccountType: 'citic',
-  toAccount: '', 
-  bankCardNo: '',
-  amount: 0, 
-  remark: '' 
-});
+const transferForm = reactive({ toAccountNo: '', amount: 0, remark: '' });
 
-async function fetchAccountInfo() {
-  try {
-    const res = await getCiticAccountInfo();
-    if (res.result) {
-      Object.assign(accountInfo, res.result);
-    }
-  } catch (error) {
-    console.error('获取账户信息失败', error);
-  }
+// 流水
+const recordVisible = ref(false);
+const recordLoading = ref(false);
+const records = ref<any[]>([]);
+const recordPagination = reactive({ current: 1, pageSize: 10, total: 0 });
+
+const recordColumns = [
+  { title: '流水号', dataIndex: 'recordNo', key: 'recordNo', width: 200 },
+  { title: '业务类型', key: 'bizType', width: 100 },
+  { title: '变动金额', key: 'amount', width: 130 },
+  { title: '变动前余额', dataIndex: 'balanceBefore', key: 'balanceBefore', width: 130, customRender: ({ text }) => `¥${Number(text || 0).toFixed(2)}` },
+  { title: '变动后余额', dataIndex: 'balanceAfter', key: 'balanceAfter', width: 130, customRender: ({ text }) => `¥${Number(text || 0).toFixed(2)}` },
+  { title: '关联单号', dataIndex: 'orderNo', key: 'orderNo', width: 180 },
+  { title: '备注', dataIndex: 'remark', key: 'remark', ellipsis: true },
+  { title: '时间', dataIndex: 'createTime', key: 'createTime', width: 170 },
+];
+
+function getBizTypeColor(type: number) {
+  const map: Record<number, string> = {
+    1: 'green', 2: 'red', 3: 'orange', 4: 'blue',
+    5: 'purple', 6: 'cyan', 7: 'magenta', 8: 'gold'
+  };
+  return map[type] || 'default';
 }
 
-async function fetchStats() {
-  try {
-    const res = await getAccountStats();
-    if (res.result) {
-      Object.assign(stats, res.result);
-    }
-  } catch (error) {
-    console.error('获取统计数据失败', error);
-  }
-}
-
-async function fetchCardList() {
-  try {
-    const res = await getCardList({ page: 1, pageSize: 100 });
-    if (res.result) {
-      cardList.value = res.result.list || [];
-    }
-  } catch (error) {
-    console.error('获取银行卡列表失败', error);
-  }
-}
-
-async function fetchRecords() {
+async function fetchData() {
   loading.value = true;
   try {
     const params: any = {
       page: pagination.current,
       pageSize: pagination.pageSize,
     };
-    if (recordType.value) params.type = recordType.value;
-    if (dateRange.value && dateRange.value.length === 2) {
-      params.startDate = dateRange.value[0].format('YYYY-MM-DD');
-      params.endDate = dateRange.value[1].format('YYYY-MM-DD');
-    }
+    if (searchForm.accountNo) params.accountNo = searchForm.accountNo;
+    if (searchForm.accountName) params.accountName = searchForm.accountName;
+    if (searchForm.accountType !== undefined) params.accountType = searchForm.accountType;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
 
-    const res = await getAccountRecords(params);
-    if (res.result) {
-      records.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/account/list', params });
+    if (res && res.data) {
+      dataSource.value = res.data.list || [];
+      pagination.total = res.data.total || 0;
+      accountList.value = dataSource.value;
+      updateStats();
     }
   } catch (error) {
-    console.error('获取记录失败', error);
+    console.error('获取数据失败', error);
   } finally {
     loading.value = false;
   }
 }
 
+function updateStats() {
+  stats.totalCount = dataSource.value.length;
+  stats.totalBalance = dataSource.value.reduce((sum, item) => sum + Number(item.balance || 0), 0).toFixed(2);
+  stats.totalAvailable = dataSource.value.reduce((sum, item) => sum + Number(item.availableBalance || 0), 0).toFixed(2);
+}
+
+function handleSearch() {
+  pagination.current = 1;
+  fetchData();
+}
+
+function handleReset() {
+  searchForm.accountNo = '';
+  searchForm.accountName = '';
+  searchForm.accountType = undefined;
+  searchForm.status = undefined;
+  handleSearch();
+}
+
 function handleTableChange(pag: any) {
   pagination.current = pag.current;
   pagination.pageSize = pag.pageSize;
-  fetchRecords();
+  fetchData();
 }
 
+function openRegisterModal() {
+  isEdit.value = false;
+  Object.assign(formData, {
+    accountNo: '',
+    accountName: '',
+    accountType: 1,
+    accountAttr: 1,
+    mchNo: '',
+    agentNo: '',
+    remark: '',
+  });
+  modalVisible.value = true;
+}
+
+function openEditModal(record: any) {
+  isEdit.value = true;
+  currentRecord.value = record;
+  Object.assign(formData, {
+    accountNo: record.accountNo,
+    accountName: record.accountName,
+    accountType: record.accountType,
+    accountAttr: record.accountAttr,
+    mchNo: record.mchNo,
+    agentNo: record.agentNo,
+    remark: record.remark,
+  });
+  modalVisible.value = true;
+}
+
+async function handleSubmit() {
+  submitLoading.value = true;
+  try {
+    if (isEdit.value && currentRecord.value) {
+      await defHttp.put({ url: `/basic-api/citic/account/${currentRecord.value.id}`, data: formData });
+      message.success('更新成功');
+    } else {
+      await defHttp.post({ url: '/basic-api/citic/account/register', data: formData });
+      message.success('开户成功');
+    }
+    modalVisible.value = false;
+    fetchData();
+  } catch (error) {
+    message.error('操作失败');
+  } finally {
+    submitLoading.value = false;
+  }
+}
+
+async function handleToggleStatus(record: any, checked: boolean) {
+  try {
+    await defHttp.put({ url: `/basic-api/citic/account/${record.id}`, data: { status: checked ? 1 : 0 } });
+    message.success(checked ? '账户已启用' : '账户已停用');
+    fetchData();
+  } catch (error) {
+    message.error('操作失败');
+  }
+}
+
+function openDetailModal(record: any) {
+  currentRecord.value = record;
+  detailVisible.value = true;
+}
+
+// 充值
 function openRechargeModal() {
   rechargeForm.amount = 0;
   rechargeForm.remark = '';
@@ -413,12 +527,11 @@ async function handleRecharge() {
   }
   submitLoading.value = true;
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 模拟充值，实际应该调用充值API
+    await new Promise(resolve => setTimeout(resolve, 500));
     message.success('充值成功');
     rechargeVisible.value = false;
-    fetchAccountInfo();
-    fetchStats();
-    fetchRecords();
+    fetchData();
   } catch (error) {
     message.error('充值失败');
   } finally {
@@ -426,6 +539,7 @@ async function handleRecharge() {
   }
 }
 
+// 取款
 function openWithdrawModal() {
   withdrawForm.amount = 0;
   withdrawForm.remark = '';
@@ -437,18 +551,16 @@ async function handleWithdraw() {
     message.error('请输入正确的取款金额');
     return;
   }
-  if (withdrawForm.amount > Number(accountInfo.availableBalance)) {
+  if (withdrawForm.amount > Number(currentRecord.value?.availableBalance || 0)) {
     message.error('取款金额不能超过可用余额');
     return;
   }
   submitLoading.value = true;
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     message.success('取款申请已提交');
     withdrawVisible.value = false;
-    fetchAccountInfo();
-    fetchStats();
-    fetchRecords();
+    fetchData();
   } catch (error) {
     message.error('取款失败');
   } finally {
@@ -456,36 +568,29 @@ async function handleWithdraw() {
   }
 }
 
+// 转账
 function openTransferModal() {
-  transferForm.toAccountType = 'citic';
-  transferForm.toAccount = '';
-  transferForm.bankCardNo = '';
+  transferForm.toAccountNo = '';
   transferForm.amount = 0;
   transferForm.remark = '';
   transferVisible.value = true;
 }
 
 async function handleTransfer() {
+  if (!transferForm.toAccountNo) {
+    message.error('请选择目标账户');
+    return;
+  }
   if (transferForm.amount <= 0) {
     message.error('请输入正确的转账金额');
     return;
   }
-  if (transferForm.toAccountType === 'citic' && !transferForm.toAccount) {
-    message.error('请选择目标账户');
-    return;
-  }
-  if (transferForm.toAccountType === 'bank' && !transferForm.bankCardNo) {
-    message.error('请输入银行卡号');
-    return;
-  }
   submitLoading.value = true;
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     message.success('转账成功');
     transferVisible.value = false;
-    fetchAccountInfo();
-    fetchStats();
-    fetchRecords();
+    fetchData();
   } catch (error) {
     message.error('转账失败');
   } finally {
@@ -493,13 +598,43 @@ async function handleTransfer() {
   }
 }
 
-async function handleRefresh() {
-  await Promise.all([fetchAccountInfo(), fetchStats(), fetchRecords()]);
+// 流水
+function openRecordModal() {
+  recordPagination.current = 1;
+  fetchRecords();
+  recordVisible.value = true;
+}
+
+async function fetchRecords() {
+  if (!currentRecord.value) return;
+  recordLoading.value = true;
+  try {
+    const res = await defHttp.get({
+      url: '/basic-api/citic/account/records',
+      params: {
+        accountNo: currentRecord.value.accountNo,
+        page: recordPagination.current,
+        pageSize: recordPagination.pageSize,
+      }
+    });
+    if (res && res.data) {
+      records.value = res.data.list || [];
+      recordPagination.total = res.data.total || 0;
+    }
+  } catch (error) {
+    console.error('获取流水失败', error);
+  } finally {
+    recordLoading.value = false;
+  }
+}
+
+function handleRefresh() {
+  fetchData();
   message.success('刷新成功');
 }
 
-onMounted(async () => {
-  await Promise.all([fetchAccountInfo(), fetchStats(), fetchCardList(), fetchRecords()]);
+onMounted(() => {
+  fetchData();
 });
 </script>
 
@@ -509,106 +644,15 @@ onMounted(async () => {
   background: #f0f2f5;
 }
 
-.account-overview {
-  margin-bottom: 24px;
-}
-
-.account-card {
-  text-align: center;
-}
-
-.card-footer {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-  font-size: 12px;
-  color: #666;
-}
-
-.card-footer .label {
-  margin-right: 4px;
-}
-
-.card-footer .value {
-  font-weight: 500;
-  color: #333;
-}
-
-.card-footer .value.expense {
-  color: #f5222d;
-}
-
-.freeze-info {
-  padding: 8px 0;
-}
-
-.freeze-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.freeze-item:last-child {
-  margin-bottom: 0;
-}
-
-.freeze-item .label {
-  color: #666;
-}
-
-.freeze-item .value {
-  font-weight: 500;
-  color: #333;
-}
-
-.freeze-item .value.frozen {
-  color: #faad14;
-}
-
-.account-desc {
-  margin-bottom: 24px;
-}
-
-.action-buttons {
-  margin-bottom: 24px;
-}
-
-.record-card {
-  margin-top: 16px;
-}
-
-.record-no {
-  font-family: 'Consolas', monospace;
-  color: #666;
-}
-
-.income {
-  color: #52c41a;
-  font-weight: 500;
-}
-
-.expense {
-  color: #f5222d;
-  font-weight: 500;
-}
-
-.balance {
-  color: #333;
-}
-
-.mb-16 {
-  margin-bottom: 16px;
-}
-
-.available-balance {
-  color: #52c41a;
-  font-weight: 500;
-  font-size: 16px;
-}
-
-.from-account {
-  color: #666;
-}
+.search-form { margin-bottom: 16px; }
+.stat-row { margin-bottom: 16px; }
+.table-toolbar { margin-bottom: 16px; }
+.account-no { font-family: 'Consolas', monospace; color: #666; }
+.amount-text { color: #f5222d; font-weight: 500; }
+.available-text { color: #52c41a; font-weight: 500; }
+.frozen-text { color: #faad14; }
+.income-text { color: #52c41a; font-weight: 500; }
+.expense-text { color: #f5222d; font-weight: 500; }
+.mb-16 { margin-bottom: 16px; }
 </style>
+

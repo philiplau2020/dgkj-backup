@@ -97,6 +97,7 @@
     "resize-observer-polyfill": "^1.5.1",
     "showdown": "^2.1.0",
     "sortablejs": "^1.15.1",
+    "ssh2": "^1.17.0",
     "tinymce": "^5.10.9",
     "unocss": "0.58.3",
     "vditor": "^3.9.8",

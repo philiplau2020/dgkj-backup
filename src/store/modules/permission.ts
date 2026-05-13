@@ -125,7 +125,8 @@ export const usePermissionStore = defineStore({
         const { roles } = meta || {};
         if (!roles) return true;
         // 进行角色权限判断
-        return roleList.some((role) => roles.includes(role));
+        const roleValues = roleList.map((r) => r.value);
+        return (roles as string[]).some((role) => roleValues.includes(role));
       };
 
       const routeRemoveIgnoreFilter = (route: AppRouteRecordRaw) => {
@@ -182,12 +183,24 @@ export const usePermissionStore = defineStore({
 
         // 路由映射， 默认进入该case
         case PermissionModeEnum.ROUTE_MAPPING:
+          // 调试：打印 asyncRoutes 的内容
+          console.log('[Permission] asyncRoutes count:', asyncRoutes.length);
+          console.log('[Permission] asyncRoutes paths:', asyncRoutes.map(r => r.path || r.name || 'unknown'));
+          
           // 对非一级路由进行过滤
           routes = filter(asyncRoutes, routeFilter);
           // 对一级路由再次根据角色权限过滤
           routes = routes.filter(routeFilter);
+          
+          console.log('[Permission] filtered routes count:', routes.length);
+          console.log('[Permission] filtered routes paths:', routes.map(r => r.path || r.name || 'unknown'));
+          
           // 将路由转换成菜单
           const menuList = transformRouteToMenu(routes, true);
+          
+          console.log('[Permission] menuList count:', menuList.length);
+          console.log('[Permission] menuList:', JSON.stringify(menuList.map(l => ({ path: l.path, name: l.name, children: l.children?.length || 0 }))));
+          
           // 移除掉 ignoreRoute: true 的路由 非一级路由
           routes = filter(routes, routeRemoveIgnoreFilter);
           // 移除掉 ignoreRoute: true 的路由 一级路由；

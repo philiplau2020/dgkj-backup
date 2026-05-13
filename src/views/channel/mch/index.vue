@@ -15,12 +15,18 @@
 
 <script setup lang="ts">
 import { useTable } from '@/components/Table';
-import { Badge } from 'ant-design-vue';
+import { Badge, message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const [registerTable] = useTable({
   api: async (params) => {
-    const res = await fetch(`/basic-api/channel/mch/list?${new URLSearchParams(params)}`);
-    return (await res.json()).result;
+    try {
+      const res = await defHttp.get({ url: '/basic-api/channel/mch/list', params });
+      if (res) return res;
+      return { list: [], total: 0 };
+    } catch {
+      return { list: [], total: 0 };
+    }
   },
   columns: [
     { title: '渠道', dataIndex: 'channelName', width: 120 },
@@ -36,5 +42,7 @@ const [registerTable] = useTable({
   bordered: true,
 });
 
-function handleAdd() {}
+async function handleAdd() {
+  message.info('新增通道商户功能开发中');
+}
 </script>

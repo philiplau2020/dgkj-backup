@@ -59,6 +59,13 @@ export function deepMerge<T extends object | null | undefined, U extends object 
     return target as T & U;
   }
   return mergeWith({}, source, target, (sourceValue, targetValue) => {
+    // 忽略 undefined 值，让有值的覆盖 undefined
+    if (sourceValue === undefined) {
+      return targetValue;
+    }
+    if (targetValue === undefined) {
+      return sourceValue;
+    }
     if (isArray(targetValue) && isArray(sourceValue)) {
       switch (mergeArrays) {
         case 'union':

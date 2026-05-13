@@ -1,19 +1,21 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  List = ApiPath.AgentList,
-  Get = ApiPath.Agent,
-  Create = ApiPath.Agent,
-  Update = ApiPath.Agent,
-  Review = `${ApiPath.Agent}/review`,
-  ProfitList = ApiPath.AgentProfitList,
-  WithdrawList = ApiPath.AgentWithdrawList,
-  WithdrawCreate = ApiPath.AgentWithdraw,
-  WithdrawReview = ApiPath.AgentWithdrawReview,
-  AuditList = `${ApiPath.Agent}/audit/list`,
-  Audit = `${ApiPath.Agent}/audit`,
-}
+const Api = {
+  List: ApiPath.AgentList,
+  Get: ApiPath.Agent,
+  Create: ApiPath.Agent,
+  Update: ApiPath.Agent,
+  Review: `${ApiPath.Agent}/review`,
+  ProfitList: ApiPath.AgentProfitList,
+  WithdrawList: ApiPath.AgentWithdrawList,
+  WithdrawCreate: ApiPath.AgentWithdraw,
+  WithdrawReview: ApiPath.AgentWithdrawReview,
+  AuditList: `${ApiPath.Agent}/audit/list`,
+  Audit: `${ApiPath.Agent}/audit`,
+} as const;
+
+type Api = typeof Api;
 
 export interface AgentItem {
   id: string;
@@ -83,7 +85,7 @@ export function reviewWithdraw(id: string, params: { status: number; failReason?
 }
 
 export function getAgentStats(params?: any) {
-  return defHttp.get<any>({ url: Api.Stats, params });
+  return defHttp.get<any>({ url: ApiPath.AgentStats, params });
 }
 
 export function getAgentAuditList(params: { page?: number; pageSize?: number; status?: number }) {

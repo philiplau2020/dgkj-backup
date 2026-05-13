@@ -12,15 +12,18 @@ export class MchController {
   // ============== Merchant Info ==============
   async getMchList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, pageSize = 10, mchNo, mchName, status, agentId } = req.query;
+      const { page = 1, pageSize = 10, mchNo, mchName, mchType, status, agentId, startTime, endTime } = req.query;
       const skip = (Number(page) - 1) * Number(pageSize);
 
       const queryBuilder = this.mchRepo.createQueryBuilder('mch');
 
       if (mchNo) queryBuilder.andWhere('mch.mchNo LIKE :mchNo', { mchNo: `%${mchNo}%` });
       if (mchName) queryBuilder.andWhere('mch.mchName LIKE :mchName', { mchName: `%${mchName}%` });
+      if (mchType !== undefined) queryBuilder.andWhere('mch.mchType = :mchType', { mchType });
       if (status !== undefined) queryBuilder.andWhere('mch.status = :status', { status });
       if (agentId) queryBuilder.andWhere('mch.agentId = :agentId', { agentId });
+      if (startTime) queryBuilder.andWhere('mch.createTime >= :startTime', { startTime });
+      if (endTime) queryBuilder.andWhere('mch.createTime <= :endTime', { endTime });
 
       const [list, total] = await queryBuilder
         .skip(skip)
@@ -38,6 +41,17 @@ export class MchController {
     try {
       const { id } = req.params;
       const mch = await this.mchRepo.findOne({ where: { id } });
+      if (!mch) return res.status(404).json({ code: 404, message: '商户不存在', data: null, timestamp: new Date().toISOString() });
+      res.json({ code: 0, message: 'success', data: mch, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMchByMchNo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { mchNo } = req.params;
+      const mch = await this.mchRepo.findOne({ where: { mchNo } });
       if (!mch) return res.status(404).json({ code: 404, message: '商户不存在', data: null, timestamp: new Date().toISOString() });
       res.json({ code: 0, message: 'success', data: mch, timestamp: new Date().toISOString() });
     } catch (error) {
@@ -91,6 +105,23 @@ export class MchController {
     }
   }
 
+  async deleteMch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const mch = await this.mchRepo.findOne({ where: { id } });
+      if (!mch) {
+        return res.status(404).json({ code: 404, message: '商户不存在', data: null, timestamp: new Date().toISOString() });
+      }
+      if (mch.status === 1) {
+        return res.status(400).json({ code: 400, message: '已启用的商户不能删除', data: null, timestamp: new Date().toISOString() });
+      }
+      await this.mchRepo.delete(id);
+      res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async reviewMch(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
@@ -103,6 +134,26 @@ export class MchController {
         updateTime: new Date(),
       });
       res.json({ code: 0, message: '审核成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async enableMch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.mchRepo.update(id, { status: 1, updateTime: new Date() });
+      res.json({ code: 0, message: '启用成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async disableMch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.mchRepo.update(id, { status: 2, updateTime: new Date() });
+      res.json({ code: 0, message: '禁用成功', data: null, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
@@ -165,15 +216,35 @@ export class MchController {
   // ============== Store Management ==============
   async getStoreList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, pageSize = 10, mchNo, storeName } = req.query;
+      const { page = 1, pageSize = 10, mchNo, storeId, storeName, status } = req.query;
       const skip = (Number(page) - 1) * Number(pageSize);
 
       const queryBuilder = this.storeRepo.createQueryBuilder('store');
       if (mchNo) queryBuilder.andWhere('store.mchNo = :mchNo', { mchNo });
+      if (storeId) queryBuilder.andWhere('store.storeId LIKE :storeId', { storeId: `%${storeId}%` });
       if (storeName) queryBuilder.andWhere('store.storeName LIKE :storeName', { storeName: `%${storeName}%` });
+      if (status !== undefined) queryBuilder.andWhere('store.status = :status', { status });
 
-      const [list, total] = await queryBuilder.skip(skip).take(Number(pageSize)).orderBy('store.createTime', 'DESC').getManyAndCount();
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('store.createTime', 'DESC')
+        .getManyAndCount();
+
       res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getStoreById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const store = await this.storeRepo.findOne({ where: { id } });
+      if (!store) {
+        return res.status(404).json({ code: 404, message: '门店不存在', data: null, timestamp: new Date().toISOString() });
+      }
+      res.json({ code: 0, message: 'success', data: store, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
@@ -222,14 +293,71 @@ export class MchController {
     }
   }
 
+  async deleteStore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const store = await this.storeRepo.findOne({ where: { id } });
+      if (!store) {
+        return res.status(404).json({ code: 404, message: '门店不存在', data: null, timestamp: new Date().toISOString() });
+      }
+      await this.storeRepo.delete(id);
+      res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async enableStore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.storeRepo.update(id, { status: 1, updateTime: new Date() });
+      res.json({ code: 0, message: '启用成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async disableStore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.storeRepo.update(id, { status: 0, updateTime: new Date() });
+      res.json({ code: 0, message: '禁用成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ============== Rate Management ==============
   async getRateList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { mchNo } = req.query;
+      const { page = 1, pageSize = 10, mchNo, payWay, status } = req.query;
+      const skip = (Number(page) - 1) * Number(pageSize);
       const queryBuilder = this.rateRepo.createQueryBuilder('rate');
+
       if (mchNo) queryBuilder.andWhere('rate.mchNo = :mchNo', { mchNo });
-      const list = await queryBuilder.orderBy('rate.createTime', 'DESC').getMany();
-      res.json({ code: 0, message: 'success', data: list, timestamp: new Date().toISOString() });
+      if (payWay) queryBuilder.andWhere('rate.payWay = :payWay', { payWay });
+      if (status !== undefined) queryBuilder.andWhere('rate.status = :status', { status });
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('rate.createTime', 'DESC')
+        .getManyAndCount();
+
+      res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRateById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const rate = await this.rateRepo.findOne({ where: { id } });
+      if (!rate) {
+        return res.status(404).json({ code: 404, message: '费率配置不存在', data: null, timestamp: new Date().toISOString() });
+      }
+      res.json({ code: 0, message: 'success', data: rate, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
@@ -238,6 +366,13 @@ export class MchController {
   async createRate(req: Request, res: Response, next: NextFunction) {
     try {
       const { mchNo, payWay, rateType, rate, minFee, maxFee } = req.body;
+      
+      // 检查是否已存在相同商户和支付方式的费率配置
+      const existing = await this.rateRepo.findOne({ where: { mchNo, payWay } });
+      if (existing) {
+        return res.status(400).json({ code: 400, message: '该商户已配置此支付方式的费率', data: null, timestamp: new Date().toISOString() });
+      }
+
       const rateRecord = this.rateRepo.create({
         id: uuidv4(),
         mchNo,
@@ -264,6 +399,68 @@ export class MchController {
       updateData.updateTime = new Date();
       await this.rateRepo.update(id, updateData);
       res.json({ code: 0, message: '更新成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteRate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const rate = await this.rateRepo.findOne({ where: { id } });
+      if (!rate) {
+        return res.status(404).json({ code: 404, message: '费率配置不存在', data: null, timestamp: new Date().toISOString() });
+      }
+      await this.rateRepo.delete(id);
+      res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async enableRate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.rateRepo.update(id, { status: 1, updateTime: new Date() });
+      res.json({ code: 0, message: '启用成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async disableRate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.rateRepo.update(id, { status: 0, updateTime: new Date() });
+      res.json({ code: 0, message: '禁用成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 批量配置费率
+  async batchCreateRate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { rates } = req.body;
+      if (!rates || !Array.isArray(rates) || rates.length === 0) {
+        return res.status(400).json({ code: 400, message: '费率配置不能为空', data: null, timestamp: new Date().toISOString() });
+      }
+
+      const rateRecords = rates.map((rate: any) => this.rateRepo.create({
+        id: uuidv4(),
+        mchNo: rate.mchNo,
+        payWay: rate.payWay,
+        rateType: rate.rateType,
+        rate: rate.rate,
+        minFee: rate.minFee,
+        maxFee: rate.maxFee,
+        status: 1,
+        createTime: new Date(),
+        updateTime: new Date(),
+      }));
+
+      await this.rateRepo.save(rateRecords);
+      res.json({ code: 0, message: '批量创建成功', data: { count: rateRecords.length }, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,6 @@
 import { MenuTypeEnum } from '@/enums/menuEnum';
 import { HandlerEnum } from './enum';
-import { updateHeaderBgColor, updateSidebarBgColor } from '@/logics/theme/updateBackground';
+import { updateHeaderBgColor, updateSidebarBgColor, updateThemeColor } from '@/logics/theme/updateBackground';
 import { updateColorWeak } from '@/logics/theme/updateColorWeak';
 import { updateGrayMode } from '@/logics/theme/updateGrayMode';
 
@@ -17,6 +17,9 @@ export function baseHandler(event: HandlerEnum, value: any) {
   if (event === HandlerEnum.CHANGE_THEME) {
     updateHeaderBgColor();
     updateSidebarBgColor();
+  }
+  if (event === HandlerEnum.CHANGE_THEME_COLOR) {
+    updateThemeColor(value);
   }
 }
 

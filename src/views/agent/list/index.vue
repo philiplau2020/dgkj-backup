@@ -184,7 +184,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Badge, Row, Col, Statistic, Dropdown, Menu, MenuItem, Modal, Descriptions, DescriptionsItem, RadioGroup, Radio } from 'ant-design-vue';
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
-import { getAgentList, getAgentStats } from '@/api/agent';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -261,10 +261,10 @@ async function fetchData() {
     if (searchForm.agentName) params.agentName = searchForm.agentName;
     if (searchForm.status !== undefined) params.status = searchForm.status;
 
-    const res = await getAgentList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/agent/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
     }
   } catch (error) {
     console.error('获取数据失败', error);
@@ -275,9 +275,9 @@ async function fetchData() {
 
 async function fetchStats() {
   try {
-    const res = await getAgentStats();
-    if (res.result) {
-      Object.assign(stats, res.result);
+    const res = await defHttp.get({ url: '/basic-api/agent/stats' });
+    if (res) {
+      Object.assign(stats, res);
     }
   } catch (error) {
     console.error('获取统计数据失败', error);

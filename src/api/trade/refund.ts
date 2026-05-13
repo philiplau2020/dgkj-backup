@@ -1,10 +1,10 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  List = ApiPath.TradeRefundList,
-  Create = ApiPath.TradeRefund,
-}
+const Api = {
+  List: ApiPath.TradeRefundList,
+  Create: ApiPath.TradeRefund,
+} as const;
 
 export function getRefundList(params: { page?: number; pageSize?: number; refundNo?: string; orderNo?: string; status?: number }) {
   return defHttp.get<{ list: any[]; total: number }>({ url: Api.List, params });

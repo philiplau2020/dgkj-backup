@@ -1,15 +1,15 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  BatchList = ApiPath.CheckBatchList,
-  BatchCreate = ApiPath.CheckBatch,
-  BatchReview = ApiPath.CheckBatchReview,
-  ChannelBillList = ApiPath.CheckChannelBillList,
-  ChannelBillCreate = ApiPath.CheckChannelBill,
-  DiffBillList = ApiPath.CheckDiffBillList,
-  DiffBillHandle = ApiPath.CheckDiffBillHandle,
-}
+const Api = {
+  BatchList: ApiPath.CheckBatchList,
+  BatchCreate: ApiPath.CheckBatch,
+  BatchReview: ApiPath.CheckBatchReview,
+  ChannelBillList: ApiPath.CheckChannelBillList,
+  ChannelBillCreate: ApiPath.CheckChannelBill,
+  DiffBillList: ApiPath.CheckDiffBillList,
+  DiffBillHandle: ApiPath.CheckDiffBillHandle,
+} as const;
 
 export interface CheckBatchItem {
   id: string;

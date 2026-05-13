@@ -1,9 +1,6 @@
 /**
  * 商户列表 - 表格配置
  */
-import { h } from 'vue';
-import { optionsListApi } from '@/api/demo/select';
-import { descItem } from '@/components/Table';
 import { FormSchema } from '@/components/Form';
 
 export const columns = [

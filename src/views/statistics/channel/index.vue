@@ -92,6 +92,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { Card, Form, FormItem, Input, RangePicker, Button, Row, Col, Statistic, Table, Progress } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import * as echarts from 'echarts';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const tableData = ref<any[]>([]);
@@ -138,22 +139,20 @@ let barChart: echarts.ECharts | null = null;
 async function fetchData() {
   loading.value = true;
   try {
-    const params = new URLSearchParams();
-    params.append('page', pagination.current.toString());
-    params.append('pageSize', pagination.pageSize.toString());
+    const params: any = {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    };
 
-    const res = await fetch(`/basic-api/stat/channel?${params}`);
-    const data = await res.json();
+    const res = await defHttp.get({ url: '/basic-api/stat/channel/list', params });
+    if (res && res.data) {
+      tableData.value = res.data;
+      pagination.total = res.total || res.data.length;
 
-    if (data.result) {
-      tableData.value = data.result.list || [];
-      pagination.total = data.result.total || 0;
-
-      // 计算统计
-      stats.totalChannel = data.result.total || 0;
+      stats.totalChannel = res.total || res.data?.length || 0;
       stats.totalCount = tableData.value.reduce((sum: number, item: any) => sum + item.totalCount, 0);
       stats.totalAmount = tableData.value.reduce((sum: number, item: any) => sum + Number(item.totalAmount), 0);
-      const totalRates = tableData.value.reduce((sum: number, item: any) => sum + Number(item.successRate.replace('%', '')), 0);
+      const totalRates = tableData.value.reduce((sum: number, item: any) => sum + Number((item.successRate || '0').replace('%', '')), 0);
       stats.avgSuccessRate = tableData.value.length > 0 ? totalRates / tableData.value.length : 0;
 
       updateCharts(tableData.value);

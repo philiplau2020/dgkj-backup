@@ -59,6 +59,9 @@ export class ProfitReceiver {
   @Column({ name: 'fixed_amount', type: 'decimal', precision: 18, scale: 2, nullable: true })
   fixedAmount: number;
 
+  @Column({ name: 'priority', type: 'int', default: 0 })
+  priority: number;
+
   @Column({ name: 'status', type: 'tinyint', default: 1 })
   status: number;
 
@@ -109,6 +112,9 @@ export class ProfitRecord {
 
   @Column({ name: 'create_time' })
   createTime: Date;
+
+  @Column({ name: 'update_time' })
+  updateTime: Date;
 }
 
 @Entity('profit_rollback')
@@ -154,4 +160,7 @@ export class ProfitRollback {
 
   @Column({ name: 'create_time' })
   createTime: Date;
+
+  @Column({ name: 'update_time' })
+  updateTime: Date;
 }

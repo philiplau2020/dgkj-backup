@@ -1,15 +1,22 @@
 import { defHttp } from '@/utils/http/axios';
-import { ApiPath, API_BASE } from '../config';
+import { ApiPath } from '../config';
 
-enum Api {
-  Login = ApiPath.Login,
-  Logout = ApiPath.Logout,
-  GetUserInfo = ApiPath.GetUserInfo,
-}
+const Api = {
+  Login: ApiPath.Login,
+  Logout: ApiPath.Logout,
+  GetUserInfo: ApiPath.GetUserInfo,
+  List: '/basic-api/sys/user/list',
+  Get: '/basic-api/sys/user',
+  Create: '/basic-api/sys/user',
+  Update: '/basic-api/sys/user',
+  Delete: '/basic-api/sys/user',
+  ResetPassword: '/basic-api/sys/user/password',
+} as const;
 
 export interface LoginParams {
   username: string;
   password: string;
+  role?: 'admin' | 'agent' | 'mch';
 }
 
 export interface LoginResultModel {
@@ -22,7 +29,11 @@ export interface LoginResultModel {
     email?: string;
     mobile?: string;
     userType: number;
+    deptId?: string;
   };
+  role: string;
+  roleName: string;
+  homePath: string;
 }
 
 export interface GetUserInfoModel {
@@ -34,10 +45,14 @@ export interface GetUserInfoModel {
     email?: string;
     mobile?: string;
     userType: number;
+    deptId?: string;
   };
   roles: string[];
   permissions: string[];
   menuList: any[];
+  role: string;
+  roleName: string;
+  homePath: string;
 }
 
 export function loginApi(params: LoginParams) {
@@ -56,9 +71,9 @@ export function doLogout() {
 }
 
 export function getPermCode() {
-  return defHttp.get<string[]>({ url: `${API_BASE}/auth/perm` });
+  return defHttp.get<string[]>({ url: '/basic-api/auth/perm' });
 }
 
 export function testRetry() {
-  return defHttp.get({ url: `${API_BASE}/test/retry` });
+  return defHttp.get({ url: '/basic-api/test/retry' });
 }

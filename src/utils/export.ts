@@ -2,7 +2,6 @@
  * 数据导出工具
  */
 import { jsonToSheetXlsx } from '@/components/Excel';
-import type { JsonToSheet } from '@/components/Excel/src/typing';
 
 export interface ExportColumn {
   title: string;

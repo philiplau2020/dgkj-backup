@@ -237,11 +237,7 @@ import {
   InputNumber, Switch, message, Alert, Divider, RadioGroup, Radio
 } from 'ant-design-vue';
 import { PlusOutlined, SearchOutlined, ReloadOutlined, DeleteOutlined } from '@ant-design/icons-vue';
-import {
-  getCiticProfitShareList,
-  executeCiticProfitShare,
-  getCiticAccountList,
-} from '@/api/citic';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -334,10 +330,10 @@ async function fetchData() {
     if (searchForm.shareType !== undefined) params.shareType = searchForm.shareType;
     if (searchForm.status !== undefined) params.status = searchForm.status;
 
-    const res = await getCiticProfitShareList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/profit-share/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
       updateStats();
     }
   } catch (error) {
@@ -349,9 +345,9 @@ async function fetchData() {
 
 async function fetchAccountList() {
   try {
-    const res = await getCiticAccountList({ page: 1, pageSize: 100 });
-    if (res.result) {
-      accountList.value = res.result.list || [];
+    const res = await defHttp.get({ url: '/basic-api/citic/account/list', params: { page: 1, pageSize: 100 } });
+    if (res && res.list) {
+      accountList.value = res.list || [];
     }
   } catch (error) {
     console.error('获取账户列表失败', error);
@@ -423,7 +419,7 @@ async function handleShare() {
 
       if (shareAmount <= 0) continue;
 
-      await executeCiticProfitShare({
+      await defHttp.post({ url: '/basic-api/citic/profit-share/execute', data: {
         orderNo: shareForm.orderNo,
         accountNo: shareForm.accountNo,
         receiverAccountNo: receiver.accountNo,
@@ -432,7 +428,7 @@ async function handleShare() {
         shareAmount,
         orderAmount: shareForm.orderAmount,
         remark: shareForm.remark,
-      });
+      }});
     }
     message.success('分账成功');
     shareVisible.value = false;

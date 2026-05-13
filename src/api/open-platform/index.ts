@@ -5,7 +5,7 @@
  */
 import { deepMerge } from '@/utils';
 import { VAxios } from '@/utils/http/axios/Axios';
-import type { AxiosTransform, CreateAxiosOptions } from '@/utils/http/axios/axiosTransform';
+import type { CreateAxiosOptions } from '@/utils/http/axios/axiosTransform';
 
 const API_BASE = '/api/v1';
 const ADMIN_BASE = '/basic-api/open';

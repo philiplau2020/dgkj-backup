@@ -225,8 +225,10 @@ async function fetchData() {
       pageSize: pagination.pageSize,
       keyword: keyword.value,
     });
-    dataSource.value = res?.list || [];
-    pagination.total = res?.total || 0;
+    // Handle unified API response format
+    const data = res?.data || res;
+    dataSource.value = data?.list || res?.list || [];
+    pagination.total = data?.total || res?.total || 0;
   } catch (error) {
     console.error('获取服务器列表失败', error);
   } finally {

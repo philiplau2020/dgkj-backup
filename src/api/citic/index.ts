@@ -9,52 +9,52 @@ import { ApiPath } from '../config';
 
 const CITIC_BASE = ApiPath.CiticAccount.split('/citic')[0] + '/citic';
 
-enum Api {
+const Api = {
   // 账户管理
-  AccountList = `${CITIC_BASE}/account/list`,
-  AccountInfo = `${CITIC_BASE}/account/info`,
-  AccountStats = `${CITIC_BASE}/account/stats`,
-  AccountBalance = `${CITIC_BASE}/account/balance`,
-  AccountRecords = `${CITIC_BASE}/account/records`,
-  AccountRegister = `${CITIC_BASE}/account/register`,
-  AccountUpdate = `${CITIC_BASE}/account`,
+  AccountList: `${CITIC_BASE}/account/list`,
+  AccountInfo: `${CITIC_BASE}/account/info`,
+  AccountStats: `${CITIC_BASE}/account/stats`,
+  AccountBalance: `${CITIC_BASE}/account/balance`,
+  AccountRecords: `${CITIC_BASE}/account/records`,
+  AccountRegister: `${CITIC_BASE}/account/register`,
+  AccountUpdate: `${CITIC_BASE}/account`,
 
   // 银行卡管理
-  CardList = `${CITIC_BASE}/card/list`,
-  CardBind = `${CITIC_BASE}/card/bind`,
-  CardUnbind = `${CITIC_BASE}/card/unbind`,
-  CardDelete = `${CITIC_BASE}/card`,
+  CardList: `${CITIC_BASE}/card/list`,
+  CardBind: `${CITIC_BASE}/card/bind`,
+  CardUnbind: `${CITIC_BASE}/card/unbind`,
+  CardDelete: `${CITIC_BASE}/card`,
 
   // 资金归集
-  CollectionList = `${CITIC_BASE}/collection/list`,
-  CollectionSet = `${CITIC_BASE}/collection/set`,
-  CollectionActive = `${CITIC_BASE}/collection/active`,
-  CollectionDelete = `${CITIC_BASE}/collection`,
+  CollectionList: `${CITIC_BASE}/collection/list`,
+  CollectionSet: `${CITIC_BASE}/collection/set`,
+  CollectionActive: `${CITIC_BASE}/collection/active`,
+  CollectionDelete: `${CITIC_BASE}/collection`,
 
   // 余额分账
-  ProfitShareList = `${CITIC_BASE}/profit-share/list`,
-  ProfitShareExecute = `${CITIC_BASE}/profit-share/execute`,
-  ProfitShareDelete = `${CITIC_BASE}/profit-share`,
+  ProfitShareList: `${CITIC_BASE}/profit-share/list`,
+  ProfitShareExecute: `${CITIC_BASE}/profit-share/execute`,
+  ProfitShareDelete: `${CITIC_BASE}/profit-share`,
 
   // 代付打款
-  TransferList = `${CITIC_BASE}/transfer/list`,
-  TransferPay = `${CITIC_BASE}/transfer/pay`,
-  TransferQuery = `${CITIC_BASE}/transfer/query`,
-  TransferConfirm = `${CITIC_BASE}/transfer/confirm`,
+  TransferList: `${CITIC_BASE}/transfer/list`,
+  TransferPay: `${CITIC_BASE}/transfer/pay`,
+  TransferQuery: `${CITIC_BASE}/transfer/query`,
+  TransferConfirm: `${CITIC_BASE}/transfer/confirm`,
 
   // 结算管理
-  SettlementList = `${CITIC_BASE}/settlement/list`,
-  SettlementApply = `${CITIC_BASE}/settlement/apply`,
-  SettlementConfirm = `${CITIC_BASE}/settlement/confirm`,
-  SettlementCancel = `${CITIC_BASE}/settlement/cancel`,
+  SettlementList: `${CITIC_BASE}/settlement/list`,
+  SettlementApply: `${CITIC_BASE}/settlement/apply`,
+  SettlementConfirm: `${CITIC_BASE}/settlement/confirm`,
+  SettlementCancel: `${CITIC_BASE}/settlement/cancel`,
 
   // 对账管理
-  CheckList = `${CITIC_BASE}/check/list`,
-  CheckTrigger = `${CITIC_BASE}/check/trigger`,
-  CheckDownload = `${CITIC_BASE}/check/download`,
-  CheckDiffList = `${CITIC_BASE}/check/diff/list`,
-  CheckDiffConfirm = `${CITIC_BASE}/check/diff/confirm`,
-}
+  CheckList: `${CITIC_BASE}/check/list`,
+  CheckTrigger: `${CITIC_BASE}/check/trigger`,
+  CheckDownload: `${CITIC_BASE}/check/download`,
+  CheckDiffList: `${CITIC_BASE}/check/diff/list`,
+  CheckDiffConfirm: `${CITIC_BASE}/check/diff/confirm`,
+} as const;
 
 // ========== 类型定义 ==========
 
@@ -499,7 +499,7 @@ export function triggerCiticCheck(params: { checkDate: string; channelCode?: str
 }
 
 export function downloadCiticCheckBill(params: { checkDate: string; channelCode?: string }) {
-  return defHttp.get({ url: Api.CheckDownload, params }, { responseType: 'blob' });
+  return defHttp.get({ url: Api.CheckDownload, params });
 }
 
 export function getCiticCheckDiffList(params: {

@@ -50,7 +50,7 @@ function getEventTargetNode(evnt: any, container: HTMLElement, className: string
 function handleClearEvent(
   params:
     | VxeGlobalInterceptorHandles.InterceptorClearFilterParams
-    | VxeGlobalInterceptorHandles.InterceptorClearActivedParams
+    | VxeGlobalInterceptorHandles.InterceptorClearEditParams
     | VxeGlobalInterceptorHandles.InterceptorClearAreasParams,
 ) {
   const { $event } = params;

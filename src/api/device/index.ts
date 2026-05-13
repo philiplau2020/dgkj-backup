@@ -1,19 +1,19 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  List = ApiPath.DeviceList,
-  Get = ApiPath.Device,
-  Create = ApiPath.Device,
-  Update = ApiPath.Device,
-  Bind = ApiPath.DeviceBind,
-  CodeList = ApiPath.DeviceCodeList,
-  CodeCreate = ApiPath.DeviceCode,
-  QrCodeList = ApiPath.DeviceQrcodeList,
-  SpeakerList = ApiPath.DeviceSpeakerList,
-  PrinterList = ApiPath.DevicePrinterList,
-  PosList = ApiPath.DevicePosList,
-}
+const Api = {
+  List: ApiPath.DeviceList,
+  Get: ApiPath.Device,
+  Create: ApiPath.Device,
+  Update: ApiPath.Device,
+  Bind: ApiPath.DeviceBind,
+  CodeList: ApiPath.DeviceCodeList,
+  CodeCreate: ApiPath.DeviceCode,
+  QrCodeList: ApiPath.DeviceQrcodeList,
+  SpeakerList: ApiPath.DeviceSpeakerList,
+  PrinterList: ApiPath.DevicePrinterList,
+  PosList: ApiPath.DevicePosList,
+} as const;
 
 export interface DeviceItem {
   id: string;

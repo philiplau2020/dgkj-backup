@@ -1,0 +1,4 @@
+mkdir -p /www/dgkj/admin
+rm -rf /www/dgkj/admin/*
+put -r D:\DGKJ\dist\* /www/dgkj/admin/
+bye

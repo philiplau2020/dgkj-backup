@@ -69,6 +69,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -97,24 +98,26 @@ function getStatusColor(status: number) { return { 0: 'default', 1: 'processing'
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 30; i++) {
-      const status = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-      const amount = (Math.random() * 10000 + 100).toFixed(2);
-      mockData.push({
-        id: i, withdrawNo: 'AW' + Date.now().toString().slice(0, 10) + i,
-        agentName: ['代理商A', '代理商B', '代理商C'][i % 3], agentNo: ['A10001', 'A10002', 'A10003'][i % 3],
-        amount, fee: (Number(amount) * 0.006).toFixed(2), actualAmount: (Number(amount) * 0.994).toFixed(2),
-        typeName: ['佣金提现', '余额提现'][i % 2], status, statusName: ['待处理', '审核通过', '已打款', '打款失败'][status],
-        remark: '提现备注' + i, createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-        processTime: status >= 1 ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null,
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.withdrawNo) params.withdrawNo = searchForm.withdrawNo;
+    if (searchForm.agentName) params.agentName = searchForm.agentName;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    
+    const res = await defHttp.get({ url: '/basic-api/agent/withdraw/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.pendingCount = dataSource.value.filter(item => item.status === 0).length;
+      stats.totalAmount = dataSource.value.reduce((sum, item) => sum + Number(item.amount), 0);
+      stats.paidAmount = dataSource.value.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
+      stats.failAmount = dataSource.value.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.pendingCount = mockData.filter(item => item.status === 0).length;
-    stats.totalAmount = mockData.reduce((sum, item) => sum + Number(item.amount), 0);
-    stats.paidAmount = mockData.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
-    stats.failAmount = mockData.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

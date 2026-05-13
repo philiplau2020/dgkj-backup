@@ -73,6 +73,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, RangePicker, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -104,26 +105,26 @@ function getStatusColor(status: number) { return { 0: 'default', 1: 'processing'
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 30; i++) {
-      const status = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-      const orderAmount = (Math.random() * 5000 + 100).toFixed(2);
-      const profitRate = [0.05, 0.08, 0.10, 0.15][Math.floor(Math.random() * 4)];
-      mockData.push({
-        id: i, profitNo: 'PF' + Date.now().toString().slice(0, 10) + i,
-        orderNo: 'P' + Date.now().toString().slice(0, 10) + i, mchNo: i % 2 === 0 ? 'M10001' : 'M10002',
-        mchName: i % 2 === 0 ? '测试商户001' : '测试商户002', orderAmount,
-        profitAmount: (Number(orderAmount) * profitRate).toFixed(2), profitRate: profitRate.toFixed(2),
-        receiverAccount: 'wx_123456' + i, receiverName: ['张三', '李四', '王五'][i % 3],
-        status, statusName: ['待分账', '分账中', '已分账', '分账失败'][status],
-        createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.profitNo) params.profitNo = searchForm.profitNo;
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    
+    const res = await defHttp.get({ url: '/basic-api/profit/record/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.totalCount = dataSource.value.length;
+      stats.totalAmount = dataSource.value.reduce((sum, item) => sum + Number(item.profitAmount), 0);
+      stats.successAmount = dataSource.value.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.profitAmount), 0);
+      stats.failAmount = dataSource.value.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.profitAmount), 0);
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.totalCount = mockData.length;
-    stats.totalAmount = mockData.reduce((sum, item) => sum + Number(item.profitAmount), 0);
-    stats.successAmount = mockData.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.profitAmount), 0);
-    stats.failAmount = mockData.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.profitAmount), 0);
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

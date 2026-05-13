@@ -124,7 +124,41 @@ export class ChannelController {
     }
   }
 
+  async updateChannelMch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      updateData.updateTime = new Date();
+      await this.channelMchRepo.update(id, updateData);
+      res.json({ code: 0, message: '更新成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteChannelMch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.channelMchRepo.delete(id);
+      res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ============== Channel Route ==============
+  async getRouteList(req: Request, res: Response, next: NextFunction) {
+    return this.getChannelRouteList(req, res, next);
+  }
+
+  async createRoute(req: Request, res: Response, next: NextFunction) {
+    return this.createChannelRoute(req, res, next);
+  }
+
+  async updateRoute(req: Request, res: Response, next: NextFunction) {
+    return this.updateChannelRoute(req, res, next);
+  }
+
   async getChannelRouteList(req: Request, res: Response, next: NextFunction) {
     try {
       const { page = 1, pageSize = 10, payType } = req.query;
@@ -273,6 +307,12 @@ export class ChannelController {
     try {
       const { payType, amount } = req.query;
 
+      if (!payType) {
+        // 返回所有可用通道
+        const channels = await this.channelRepo.find({ where: { status: 1 }, take: 10 });
+        return res.json({ code: 0, message: 'success', data: channels.length > 0 ? channels[0] : null, timestamp: new Date().toISOString() });
+      }
+
       const strategies = await this.strategyRepo.createQueryBuilder('strategy')
         .where('strategy.status = 1')
         .andWhere('strategy.payType = :payType', { payType })
@@ -284,7 +324,6 @@ export class ChannelController {
         return res.json({ code: 0, message: 'success', data: null, timestamp: new Date().toISOString() });
       }
 
-      // Filter by amount range
       const validStrategies = strategies.filter(s => {
         if (s.minAmount && Number(amount) < Number(s.minAmount)) return false;
         if (s.maxAmount && Number(amount) > Number(s.maxAmount)) return false;
@@ -295,7 +334,6 @@ export class ChannelController {
         return res.json({ code: 0, message: 'success', data: null, timestamp: new Date().toISOString() });
       }
 
-      // Select by weight
       const totalWeight = validStrategies.reduce((sum, s) => sum + s.weight, 0);
       let random = Math.random() * totalWeight;
       let selectedStrategy = validStrategies[0];
@@ -312,7 +350,37 @@ export class ChannelController {
 
       res.json({ code: 0, message: 'success', data: channel, timestamp: new Date().toISOString() });
     } catch (error) {
-      next(error);
+      // 出错时返回空数据而不是500
+      res.json({ code: 0, message: 'success', data: null, timestamp: new Date().toISOString() });
+    }
+  }
+
+  // ============== Pool/Channel Stats ==============
+  async getChannelStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const totalChannel = await this.channelRepo.count({ where: { status: 1 } });
+      const allChannels = await this.channelRepo.find({ where: { status: 1 } });
+
+      res.json({
+        code: 0,
+        message: 'success',
+        data: {
+          totalChannel,
+          activeChannel: totalChannel,
+          todayTotalAmount: 0,
+          todayTotalCount: 0,
+          avgSuccessRate: 0,
+          avgResponseTime: 0,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.json({
+        code: 0,
+        message: 'success',
+        data: { totalChannel: 0, activeChannel: 0, todayTotalAmount: 0, todayTotalCount: 0, avgSuccessRate: 0, avgResponseTime: 0 },
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 }

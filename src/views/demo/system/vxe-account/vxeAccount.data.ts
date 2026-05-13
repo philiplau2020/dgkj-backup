@@ -1,7 +1,7 @@
-import { VxeFormItemProps, VxeGridPropTypes } from '@/components/VxeTable';
+import type { VxeFormItemProps } from '@/components/VxeTable';
 import { deptMap } from '../account/account.data';
 
-export const columns: VxeGridPropTypes.Columns = [
+export const columns: any[] = [
   {
     title: '用户名',
     field: 'account',

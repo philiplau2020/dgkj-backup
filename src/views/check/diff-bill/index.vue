@@ -79,6 +79,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -92,8 +93,8 @@ const columns = [
   { title: '支付接口', dataIndex: 'ifCodeName', key: 'ifCodeName', width: 120 },
   { title: '差异类型', key: 'diffType', width: 100 },
   { title: '差异金额', key: 'diffAmount', width: 120 },
-  { title: '订单金额', dataIndex: 'orderAmount', key: 'orderAmount', width: 120, customRender: ({ text }) => `¥${text}` },
-  { title: '账单金额', dataIndex: 'billAmount', key: 'billAmount', width: 120, customRender: ({ text }) => `¥${text}` },
+  { title: '订单金额', dataIndex: 'orderAmount', key: 'orderAmount', width: 120 },
+  { title: '账单金额', dataIndex: 'billAmount', key: 'billAmount', width: 120 },
   { title: '处理状态', key: 'handleStatus', width: 100 },
   { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170 },
   { title: '操作', key: 'action', width: 120 },
@@ -105,27 +106,27 @@ const detailVisible = ref(false);
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 30; i++) {
-      const diffType = Math.random() > 0.5 ? 1 : 2;
-      const handleStatus = Math.random() > 0.7 ? 1 : 0;
-      mockData.push({
-        id: i, batchNo: 'BATCH' + new Date().toISOString().split('T')[0].replace(/-/g, '') + '001',
-        orderNo: 'P' + Date.now().toString().slice(0, 10) + i,
-        ifCode: ['CITIC_QR', 'WX_QR', 'ALI_QR'][i % 3], ifCodeName: ['中信银行', '微信', '支付宝'][i % 3],
-        diffType, diffTypeName: diffType === 1 ? '长款' : '短款',
-        diffAmount: (Math.random() * 100 + 1).toFixed(2),
-        orderAmount: (Math.random() * 1000 + 100).toFixed(2),
-        billAmount: (Math.random() * 1000 + 100).toFixed(2),
-        handleStatus, handleStatusName: handleStatus === 1 ? '已处理' : '未处理',
-        createdAt: new Date(Date.now() - Math.random() * 86400000).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.batchNo) params.batchNo = searchForm.batchNo;
+    if (searchForm.orderNo) params.orderNo = searchForm.orderNo;
+    if (searchForm.diffType !== undefined) params.diffType = searchForm.diffType;
+    if (searchForm.handleStatus !== undefined) params.handleStatus = searchForm.handleStatus;
+    
+    const res = await defHttp.get({ url: '/basic-api/check/diff-bill/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.totalCount = dataSource.value.length;
+      stats.longAmount = dataSource.value.filter(item => item.diffType === 1).reduce((sum, item) => sum + Number(item.diffAmount), 0);
+      stats.shortAmount = dataSource.value.filter(item => item.diffType === 2).reduce((sum, item) => sum + Number(item.diffAmount), 0);
+      stats.handledCount = dataSource.value.filter(item => item.handleStatus === 1).length;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.totalCount = mockData.length;
-    stats.longAmount = mockData.filter(item => item.diffType === 1).reduce((sum, item) => sum + Number(item.diffAmount), 0);
-    stats.shortAmount = mockData.filter(item => item.diffType === 2).reduce((sum, item) => sum + Number(item.diffAmount), 0);
-    stats.handledCount = mockData.filter(item => item.handleStatus === 1).length;
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

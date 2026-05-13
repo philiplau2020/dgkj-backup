@@ -157,10 +157,11 @@ import { ref, reactive, onMounted } from 'vue';
 import {
   Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag,
   Row, Col, Statistic, Modal, Descriptions, DescriptionsItem, RadioGroup, Radio,
-  Textarea, RangePicker, Dropdown, Menu, MenuItem,
+  Textarea, RangePicker,
 } from 'ant-design-vue';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -208,59 +209,34 @@ function getAuditStatusName(status: number) {
 async function fetchData() {
   loading.value = true;
   try {
-    const res = await fetch(`/basic-api/mch/audit/list?${new URLSearchParams({
-      page: String(pagination.current),
-      pageSize: String(pagination.pageSize),
-      ...(searchForm.mchName && { mchName: searchForm.mchName }),
-      ...(searchForm.mchNo && { mchNo: searchForm.mchNo }),
-      ...(searchForm.auditStatus !== undefined && { auditStatus: String(searchForm.auditStatus) }),
-    })}`);
-    const json = await res.json();
-    if (json.result) {
-      dataSource.value = json.result.list || [];
-      pagination.total = json.result.total || 0;
+    const params: any = {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    };
+    if (searchForm.mchName) params.mchName = searchForm.mchName;
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.auditStatus !== undefined) params.auditStatus = searchForm.auditStatus;
+
+    const res = await defHttp.get({ url: '/basic-api/mch/audit/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      // 更新统计数据
+      stats.pendingCount = dataSource.value.filter(d => d.auditStatus === 0).length;
+      stats.passedCount = dataSource.value.filter(d => d.auditStatus === 1).length;
+      stats.rejectedCount = dataSource.value.filter(d => d.auditStatus === 2).length;
+      const total = stats.pendingCount + stats.passedCount + stats.rejectedCount;
+      stats.passRate = total > 0 ? Math.round((stats.passedCount / total) * 100) : 0;
     } else {
-      dataSource.value = generateMockData();
-      pagination.total = dataSource.value.length;
+      dataSource.value = [];
+      pagination.total = 0;
     }
   } catch (e) {
-    dataSource.value = generateMockData();
-    pagination.total = dataSource.value.length;
+    dataSource.value = [];
+    pagination.total = 0;
   } finally {
     loading.value = false;
   }
-}
-
-function generateMockData() {
-  const data = [];
-  for (let i = 1; i <= 30; i++) {
-    const auditStatuses = [0, 0, 0, 1, 1, 2];
-    const auditStatus = auditStatuses[i % 6];
-    const mchTypes = [1, 2];
-    data.push({
-      id: i,
-      mchNo: 'M' + String(10000 + i),
-      mchName: '商户' + i,
-      mchType: mchTypes[i % 2],
-      contactName: ['张三', '李四', '王五', '赵六'][i % 4],
-      contactMobile: '138' + String(10000000 + i * 111111),
-      contactEmail: `mch${i}@example.com`,
-      agentName: i % 3 === 0 ? '代理商A' : i % 3 === 1 ? '代理商B' : null,
-      bankName: '中国工商银行',
-      bankCard: '622202****' + (1000 + i),
-      province: '广东省',
-      city: '深圳市',
-      address: '南山区科技园路' + i + '号',
-      auditStatus,
-      auditRemark: '',
-      createdAt: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString().replace('T', ' ').substring(0, 19),
-    });
-  }
-  stats.pendingCount = data.filter(d => d.auditStatus === 0).length;
-  stats.passedCount = data.filter(d => d.auditStatus === 1).length;
-  stats.rejectedCount = data.filter(d => d.auditStatus === 2).length;
-  stats.passRate = Math.round((stats.passedCount / (stats.pendingCount + stats.passedCount + stats.rejectedCount)) * 100) || 0;
-  return data;
 }
 
 function handleSearch() { pagination.current = 1; fetchData(); }
@@ -283,17 +259,12 @@ function openAuditModal(record: any) {
 
 async function handleAuditSubmit() {
   try {
-    await fetch('/basic-api/mch/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mchNo: currentRecord.value?.mchNo, ...auditForm }),
-    });
+    await defHttp.post({ url: '/basic-api/mch/audit', data: { mchNo: currentRecord.value?.mchNo, ...auditForm } });
     message.success(auditForm.auditStatus === 1 ? '审核通过' : '已拒绝');
     auditVisible.value = false;
     fetchData();
   } catch (e) {
-    message.success(auditForm.auditStatus === 1 ? '审核通过' : '已拒绝');
-    auditVisible.value = false;
+    message.error('操作失败');
     fetchData();
   }
 }

@@ -315,7 +315,7 @@ import {
   DescriptionsItem, Divider, RadioGroup, Radio, Textarea, Alert, Badge, message 
 } from 'ant-design-vue';
 import { SearchOutlined, AuditOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons-vue';
-import { getCheckList, confirmCheckDiff, getCheckDiffList, downloadCheckBill, triggerCheck } from '@/api/citic';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const diffLoading = ref(false);
@@ -412,12 +412,11 @@ async function fetchData() {
       params.endDate = dateRange.value[1].format('YYYY-MM-DD');
     }
 
-    const res = await getCheckList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/check/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
 
-      // 更新统计
       stats.totalCount = dataSource.value.length;
       stats.settledCount = dataSource.value.filter(item => item.status === 2).length;
       stats.diffCount = dataSource.value.filter(item => item.status === 1).length;
@@ -433,14 +432,10 @@ async function fetchData() {
 async function fetchDiffDetails(checkNo: string) {
   diffLoading.value = true;
   try {
-    const params = {
-      page: diffPagination.current,
-      pageSize: diffPagination.pageSize,
-    };
-    const res = await getCheckDiffList(checkNo, params);
-    if (res.result) {
-      diffDetails.value = res.result.list || [];
-      diffPagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/check/diff', params: { checkNo, page: diffPagination.current, pageSize: diffPagination.pageSize } });
+    if (res) {
+      diffDetails.value = res.list || [];
+      diffPagination.total = res.total || 0;
     }
   } catch (error) {
     console.error('获取差异明细失败', error);
@@ -498,10 +493,11 @@ async function handleConfirmSubmit() {
   }
   submitLoading.value = true;
   try {
-    await confirmCheckDiff(currentRecord.value.checkNo, {
+    await defHttp.post({ url: `/basic-api/citic/check/diff/confirm`, data: {
+      checkNo: currentRecord.value.checkNo,
       diffAmount: currentRecord.value.diffAmount,
       remark: confirmForm.remark,
-    });
+    }});
     message.success('确认成功');
     confirmVisible.value = false;
     fetchData();
@@ -554,7 +550,10 @@ async function handleCheckSubmit() {
   }
   submitLoading.value = true;
   try {
-    await triggerCheck(checkForm.checkDate.format('YYYY-MM-DD'), checkForm.channel);
+    await defHttp.post({ url: '/basic-api/citic/check/trigger', data: {
+      checkDate: checkForm.checkDate.format('YYYY-MM-DD'),
+      channel: checkForm.channel,
+    }});
     message.success('对账任务已提交');
     checkVisible.value = false;
     fetchData();

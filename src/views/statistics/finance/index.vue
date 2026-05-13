@@ -90,6 +90,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { Card, Form, FormItem, RangePicker, Button, Space, Row, Col, Statistic, Table } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import * as echarts from 'echarts';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const tableData = ref<any[]>([]);
@@ -132,40 +133,27 @@ let pieChart: echarts.ECharts | null = null;
 async function fetchData() {
   loading.value = true;
   try {
-    const params = new URLSearchParams();
-
-    const res = await fetch(`/basic-api/stat/finance?${params}`);
-    const data = await res.json();
-
-    if (data.result) {
-      stats.totalBalance = Number(data.result.totalIncome || 0) - Number(data.result.totalExpense || 0);
-      stats.todaySettle = 18000 + Math.random() * 5000;
-      stats.todayWithdraw = 3500 + Math.random() * 1000;
-      stats.pendingCount = Math.floor(Math.random() * 10) + 1;
+    const res = await defHttp.get({ url: '/basic-api/stat/finance/list' });
+    if (res && res.data) {
+      stats.totalBalance = Number(res.totalIncome || 0) - Number(res.totalExpense || 0);
+      stats.todaySettle = Number(res.todaySettle || 0);
+      stats.todayWithdraw = Number(res.todayWithdraw || 0);
+      stats.pendingCount = Number(res.pendingCount || 0);
+      tableData.value = res.data;
+      pagination.total = res.data.length;
+      updateCharts(res.data);
+    } else if (res && Array.isArray(res)) {
+      tableData.value = res;
+      pagination.total = res.length;
+      updateCharts(res);
+    } else {
+      tableData.value = [];
+      pagination.total = 0;
     }
-
-    // 生成模拟趋势数据
-    const mockData = [];
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const income = 20000 + Math.random() * 30000;
-      const expense = 15000 + Math.random() * 20000;
-      mockData.push({
-        date: date.toISOString().split('T')[0],
-        income: Number(income.toFixed(2)),
-        expense: Number(expense.toFixed(2)),
-        profit: Number((income - expense).toFixed(2)),
-        settleCount: Math.floor(Math.random() * 20) + 10,
-        withdrawCount: Math.floor(Math.random() * 10) + 5,
-      });
-    }
-    tableData.value = mockData;
-    pagination.total = mockData.length;
-
-    updateCharts(mockData);
   } catch (error) {
     console.error('获取数据失败', error);
+    tableData.value = [];
+    pagination.total = 0;
   } finally {
     loading.value = false;
   }

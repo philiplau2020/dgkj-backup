@@ -110,6 +110,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, RangePicker, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -148,36 +149,27 @@ function getStatusColor(status: number) {
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 20; i++) {
-      const status = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-      const statusNames = ['待转账', '转账中', '已成功', '已失败'];
-      mockData.push({
-        id: i,
-        transferNo: 'TF' + Date.now().toString().slice(0, 10) + i.toString().padStart(4, '0'),
-        mchNo: i % 2 === 0 ? 'M10001' : 'M10002',
-        mchName: i % 2 === 0 ? '测试商户001' : '测试商户002',
-        amount: (Math.random() * 10000 + 100).toFixed(2),
-        payeeAccount: '621226****' + (1000 + i),
-        payeeName: ['张三', '李四', '王五'][i % 3],
-        status,
-        statusName: statusNames[status],
-        remark: '转账备注' + i,
-        createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-        finishTime: status === 2 ? new Date(Date.now() - Math.random() * 86400000).toISOString().replace('T', ' ').slice(0, 19) : null,
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.transferNo) params.transferNo = searchForm.transferNo;
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    
+    const res = await defHttp.get({ url: '/basic-api/trade/transfer/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.totalCount = dataSource.value.length;
+      stats.totalAmount = dataSource.value.reduce((sum, item) => sum + Number(item.amount), 0);
+      stats.successAmount = dataSource.value.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
+      stats.failAmount = dataSource.value.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData;
-    pagination.total = mockData.length;
-    stats.totalCount = mockData.length;
-    stats.totalAmount = mockData.reduce((sum, item) => sum + Number(item.amount), 0);
-    stats.successAmount = mockData.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
-    stats.failAmount = mockData.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
-  } catch (error) {
-    console.error('获取数据失败', error);
-  } finally {
-    loading.value = false;
-  }
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
+  } finally { loading.value = false; }
 }
 
 function handleSearch() { pagination.current = 1; fetchData(); }

@@ -1,0 +1,212 @@
+# DGKJ 支付平台 - Prometheus 告警规则
+# 适用于 Prometheus + AlertManager 部署
+
+groups:
+  - name: dgkj-alerts
+    interval: 30s
+    rules:
+      # ==================== 高优先级告警 ====================
+      
+      # 服务宕机
+      - alert: DGKJServiceDown
+        expr: up{job="dgkj-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          module: infrastructure
+        annotations:
+          summary: "DGKJ 服务已宕机"
+          description: "DGKJ 后端服务已经停止运行超过 1 分钟"
+      
+      # 服务响应超时
+      - alert: DGKJServiceSlowResponse
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          module: performance
+        annotations:
+          summary: "DGKJ 服务响应缓慢"
+          description: "服务 95% 请求响应时间超过 2 秒，当前: {{ $value }}s"
+      
+      # 服务完全不可用
+      - alert: DGKJServiceUnresponsive
+        expr: sum(rate(http_requests_total[5m])) == 0
+        for: 5m
+        labels:
+          severity: critical
+          module: infrastructure
+        annotations:
+          summary: "DGKJ 服务无响应"
+          description: "服务在 5 分钟内没有任何请求，可能是完全不可用"
+      
+      # ==================== HTTP 告警 ====================
+      
+      # 高错误率
+      - alert: DGKJHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          module: application
+        annotations:
+          summary: "DGKJ 服务错误率过高"
+          description: "5xx 错误率超过 5%，当前: {{ $value | humanizePercentage }}"
+      
+      # 频繁的 4xx 错误
+      - alert: DGKJHigh4xxRate
+        expr: sum(rate(http_requests_total{status=~"4.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          module: application
+        annotations:
+          summary: "DGKJ 服务 4xx 错误率较高"
+          description: "4xx 错误率超过 20%，可能是客户端问题，当前: {{ $value | humanizePercentage }}"
+      
+      # 认证失败过多
+      - alert: DGKJHighAuthFailureRate
+        expr: rate(auth_failures_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          module: security
+        annotations:
+          summary: "DGKJ 认证失败过多"
+          description: "认证失败速率超过 10/秒，可能是暴力攻击，当前: {{ $value }}/s"
+      
+      # ==================== 性能告警 ====================
+      
+      # 响应延迟过高
+      - alert: DGKJHighLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          module: performance
+        annotations:
+          summary: "DGKJ 服务延迟过高"
+          description: "99% 请求响应时间超过 5 秒，当前: {{ $value }}s"
+      
+      # 请求限流触发
+      - alert: DGKJRateLimitTriggered
+        expr: rate(rate_limit_hits_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+          module: performance
+        annotations:
+          summary: "DGKJ 限流被触发"
+          description: "限流触发频率较高: {{ $value }}/s"
+      
+      # ==================== 支付相关告警 ====================
+      
+      # 支付成功率下降
+      - alert: DGKJPaymentSuccessRateLow
+        expr: |
+          sum(rate(payment_transactions_total{status="success"}[10m])) 
+          / 
+          sum(rate(payment_transactions_total[10m])) < 0.95
+        for: 10m
+        labels:
+          severity: critical
+          module: payment
+        annotations:
+          summary: "DGKJ 支付成功率下降"
+          description: "支付成功率低于 95%，当前: {{ $value | humanizePercentage }}"
+      
+      # 支付量异常（无交易）
+      - alert: DGKJNoPaymentTransactions
+        expr: increase(payment_transactions_total[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          module: payment
+        annotations:
+          summary: "DGKJ 30 分钟无支付交易"
+          description: "在过去 30 分钟内没有任何支付交易"
+      
+      # ==================== 系统资源告警 ====================
+      
+      # CPU 使用率高
+      - alert: DGKJHighCPUUsage
+        expr: process_cpu_usage_percent{type="user"} > 80
+        for: 10m
+        labels:
+          severity: warning
+          module: infrastructure
+        annotations:
+          summary: "DGKJ CPU 使用率过高"
+          description: "CPU 用户态使用率超过 80%，当前: {{ $value }}%"
+      
+      # 内存使用率高
+      - alert: DGKJHighMemoryUsage
+        expr: (process_memory_usage_bytes{type="heapUsed"} / process_memory_usage_bytes{type="heapTotal"}) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          module: infrastructure
+        annotations:
+          summary: "DGKJ 内存使用率过高"
+          description: "堆内存使用率超过 90%"
+      
+      # 内存泄漏警告
+      - alert: DGKJMemoryLeak
+        expr: rate(process_memory_usage_bytes{type="heapUsed"}[30m]) > 10485760
+        for: 30m
+        labels:
+          severity: warning
+          module: infrastructure
+        annotations:
+          summary: "DGKJ 可能存在内存泄漏"
+          description: "内存使用率持续增长: {{ $value | humanize }}/s"
+      
+      # ==================== 数据库告警 ====================
+      
+      # 数据库连接失败
+      - alert: DGKJDatabaseConnectionDown
+        expr: database_connection_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          module: database
+        annotations:
+          summary: "DGKJ 数据库连接失败"
+          description: "数据库连接已断开"
+      
+      # 数据库查询慢
+      - alert: DGKJDatabaseSlowQuery
+        expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          module: database
+        annotations:
+          summary: "DGKJ 数据库查询缓慢"
+          description: "95% 数据库查询超过 1 秒，当前: {{ $value }}s"
+      
+      # ==================== 缓存告警 ====================
+      
+      # 缓存命中率低
+      - alert: DGKJLowCacheHitRate
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.5
+        for: 10m
+        labels:
+          severity: info
+          module: cache
+        annotations:
+          summary: "DGKJ 缓存命中率低"
+          description: "缓存命中率低于 50%，当前: {{ $value | humanizePercentage }}"
+      
+      # ==================== 业务告警 ====================
+      
+      # 系统异常过多
+      - alert: DGKJHighErrorCount
+        expr: rate(errors_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: critical
+          module: application
+        annotations:
+          summary: "DGKJ 系统异常过多"
+          description: "系统错误速率过高: {{ $value }}/s"

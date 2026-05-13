@@ -1,16 +1,16 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  Dashboard = ApiPath.StatisticsDashboard,
-  TradeList = ApiPath.StatisticsTradeList,
-  TradeTrend = ApiPath.StatisticsTradeTrend,
-  PayTypeStats = ApiPath.StatisticsTradePayType,
-  MerchantList = ApiPath.StatisticsMerchantList,
-  AgentList = ApiPath.StatisticsAgentList,
-  ChannelList = ApiPath.StatisticsChannelList,
-  FinanceList = ApiPath.StatisticsFinanceList,
-}
+const Api = {
+  Dashboard: ApiPath.StatisticsDashboard,
+  TradeList: ApiPath.StatisticsTradeList,
+  TradeTrend: ApiPath.StatisticsTradeTrend,
+  PayTypeStats: ApiPath.StatisticsTradePayType,
+  MerchantList: ApiPath.StatisticsMerchantList,
+  AgentList: ApiPath.StatisticsAgentList,
+  ChannelList: ApiPath.StatisticsChannelList,
+  FinanceList: ApiPath.StatisticsFinanceList,
+} as const;
 
 export interface DashboardStats {
   today: {

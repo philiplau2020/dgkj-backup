@@ -1,18 +1,18 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  List = ApiPath.TradeOrderList,
-  Get = ApiPath.TradeOrder,
-  Create = ApiPath.TradeOrder,
-  Close = ApiPath.TradeOrderClose,
-  RefundList = ApiPath.TradeRefundList,
-  RefundCreate = ApiPath.TradeRefund,
-  TransferList = ApiPath.TradeTransferList,
-  TransferCreate = ApiPath.TradeTransfer,
-  NotifyList = ApiPath.TradeNotifyList,
-  NotifyResend = ApiPath.TradeNotifyResend,
-}
+const Api = {
+  List: ApiPath.TradeOrderList,
+  Get: ApiPath.TradeOrder,
+  Create: ApiPath.TradeOrder,
+  Close: ApiPath.TradeOrderClose,
+  RefundList: ApiPath.TradeRefundList,
+  RefundCreate: ApiPath.TradeRefund,
+  TransferList: ApiPath.TradeTransferList,
+  TransferCreate: ApiPath.TradeTransfer,
+  NotifyList: ApiPath.TradeNotifyList,
+  NotifyResend: ApiPath.TradeNotifyResend,
+} as const;
 
 export interface OrderItem {
   id: string;

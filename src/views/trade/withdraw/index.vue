@@ -74,6 +74,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, RangePicker, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -103,24 +104,26 @@ function getStatusColor(status: number) { return { 0: 'default', 1: 'processing'
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 20; i++) {
-      const status = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-      const amount = (Math.random() * 10000 + 100).toFixed(2);
-      mockData.push({
-        id: i, withdrawNo: 'WD' + Date.now().toString().slice(0, 10) + i,
-        mchNo: i % 2 === 0 ? 'M10001' : 'M10002', mchName: i % 2 === 0 ? '测试商户001' : '测试商户002',
-        amount, fee: (Number(amount) * 0.006).toFixed(2), actualAmount: (Number(amount) * 0.994).toFixed(2),
-        bankName: '中信银行', bankAccount: '621226****' + (1000 + i), status, statusName: ['待处理', '处理中', '已成功', '已失败'][status],
-        createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-        processTime: status >= 2 ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null,
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.withdrawNo) params.withdrawNo = searchForm.withdrawNo;
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    
+    const res = await defHttp.get({ url: '/basic-api/trade/withdraw/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.pendingCount = dataSource.value.filter(item => item.status === 0).length;
+      stats.processingCount = dataSource.value.filter(item => item.status === 1).length;
+      stats.successAmount = dataSource.value.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
+      stats.failAmount = dataSource.value.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.pendingCount = mockData.filter(item => item.status === 0).length;
-    stats.processingCount = mockData.filter(item => item.status === 1).length;
-    stats.successAmount = mockData.filter(item => item.status === 2).reduce((sum, item) => sum + Number(item.amount), 0);
-    stats.failAmount = mockData.filter(item => item.status === 3).reduce((sum, item) => sum + Number(item.amount), 0);
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

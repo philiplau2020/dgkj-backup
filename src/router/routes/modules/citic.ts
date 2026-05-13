@@ -54,6 +54,12 @@ const citic: AppRouteModule = {
       component: () => import('@/views/citic/check/index.vue'),
       meta: { title: '对账管理' },
     },
+    {
+      path: 'config',
+      name: 'CiticConfig',
+      component: () => import('@/views/citic/config/index.vue'),
+      meta: { title: '银行配置' },
+    },
   ],
 };
 

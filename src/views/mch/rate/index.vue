@@ -19,11 +19,16 @@
 <script setup lang="ts">
 import { useTable } from '@/components/Table';
 import { Badge } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const [registerTable] = useTable({
   api: async (params) => {
-    const res = await fetch(`/basic-api/mch/rate/list?${new URLSearchParams(params)}`);
-    return (await res.json()).result;
+    const res = await defHttp.get({ url: '/basic-api/mch/rate/list', params });
+    const data = res?.data || res;
+    return {
+      list: data?.list || data || [],
+      total: data?.total || 0,
+    };
   },
   columns: [
     { title: '商户号', dataIndex: 'mchNo', width: 120 },
@@ -37,7 +42,9 @@ const [registerTable] = useTable({
   bordered: true,
 });
 
-function handleAdd() {}
+function handleAdd() {
+  // TODO: Open rate configuration modal
+}
 </script>
 
 <style scoped>

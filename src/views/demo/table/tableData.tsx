@@ -1,6 +1,6 @@
 import { optionsListApi } from '@/api/demo/select';
 import { FormProps, FormSchema, BasicColumn } from '@/components/Table';
-import { VxeFormItemProps, VxeGridPropTypes } from '@/components/VxeTable';
+import type { VxeFormItemProps } from '@/components/VxeTable';
 import { ref } from 'vue';
 import { Input } from 'ant-design-vue';
 
@@ -358,7 +358,7 @@ export function getTreeTableData() {
   })();
 }
 
-export const vxeTableColumns: VxeGridPropTypes.Columns = [
+export const vxeTableColumns: any[] = [
   {
     title: '序号',
     type: 'seq',

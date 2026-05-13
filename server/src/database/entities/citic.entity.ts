@@ -285,6 +285,14 @@ export class CiticCollection {
   @Column({ name: 'relation_status', type: 'tinyint', default: 1 })
   relationStatus: number;
 
+  /** 实际归集金额 */
+  @Column({ name: 'collection_amount_real', type: 'decimal', precision: 18, scale: 2, nullable: true })
+  collectionAmountReal: number;
+
+  /** 完成时间 */
+  @Column({ name: 'complete_time', nullable: true })
+  completeTime: Date;
+
   /** 失败原因 */
   @Column({ name: 'fail_reason', length: 255, nullable: true })
   failReason: string;

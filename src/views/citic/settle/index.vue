@@ -289,7 +289,7 @@ import {
   DescriptionsItem, RadioGroup, Radio, Textarea, InputNumber, Alert, Divider, message 
 } from 'ant-design-vue';
 import { PlusOutlined, SearchOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons-vue';
-import { getCiticSettleList, applyCiticSettle, confirmCiticSettle, cancelCiticSettle, getCardList } from '@/api/citic';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -362,7 +362,6 @@ const applyRules = {
   mchNo: [{ required: true, message: '请选择商户' }],
 };
 
-// 模拟商户列表
 const merchantList = ref([
   { mchNo: 'M10001', mchName: '测试商户001' },
   { mchNo: 'M10002', mchName: '测试商户002' },
@@ -412,12 +411,11 @@ async function fetchData() {
       params.endDate = dateRange.value[1].format('YYYY-MM-DD');
     }
 
-    const res = await getCiticSettleList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/settle/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
       
-      // 更新统计
       const list = dataSource.value;
       stats.pendingCount = list.filter(item => item.status === 0).length;
       stats.pendingAmount = list.filter(item => item.status === 0).reduce((sum, item) => sum + Number(item.amount), 0).toFixed(2);
@@ -461,7 +459,6 @@ function handleTableChange(pag: any) {
 
 function openDetailModal(record: any) {
   currentRecord.value = record;
-  // 模拟关联订单
   relatedOrders.value = [];
   for (let i = 1; i <= 3; i++) {
     relatedOrders.value.push({
@@ -494,12 +491,11 @@ async function handleApply() {
   }
   submitLoading.value = true;
   try {
-    await applyCiticSettle({
-      accountNo: 'CITIC001',
+    await defHttp.post({ url: '/basic-api/citic/settle/apply', data: {
       amount: applyForm.amount.toString(),
       settleType: applyForm.settleType,
       remark: applyForm.remark,
-    });
+    }});
     message.success('结算申请已提交');
     applyVisible.value = false;
     fetchData();
@@ -522,7 +518,7 @@ async function handleConfirm(record: any) {
       });
     });
     
-    await confirmCiticSettle(record.settleNo);
+    await defHttp.post({ url: `/basic-api/citic/settle/${record.settleNo}/confirm` });
     message.success('结算已确认');
     fetchData();
   } catch (error) {
@@ -543,7 +539,7 @@ async function handleCancel(record: any) {
       });
     });
     
-    await cancelCiticSettle(record.settleNo);
+    await defHttp.post({ url: `/basic-api/citic/settle/${record.settleNo}/cancel` });
     message.success('结算已取消');
     fetchData();
   } catch (error) {
@@ -562,9 +558,9 @@ function handleRefresh() {
 
 async function fetchCardList() {
   try {
-    const res = await getCardList({ page: 1, pageSize: 100 });
-    if (res.result) {
-      cardList.value = res.result.list || [];
+    const res = await defHttp.get({ url: '/basic-api/citic/card/list', params: { page: 1, pageSize: 100 } });
+    if (res && res.list) {
+      cardList.value = res.list || [];
     }
   } catch (error) {
     console.error('获取银行卡列表失败', error);

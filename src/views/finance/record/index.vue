@@ -93,7 +93,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, RangePicker } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
-import { getAccountRecord } from '@/api/finance';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -156,12 +156,11 @@ async function fetchData() {
     if (searchForm.accountNo) params.mchNo = searchForm.accountNo;
     if (searchForm.changeType !== undefined) params.changeType = searchForm.changeType;
 
-    const res = await getAccountRecord(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/finance/account/record', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
 
-      // 计算统计
       stats.totalCount = pagination.total;
       stats.totalIncome = dataSource.value
         .filter(item => item.changeType === 1)

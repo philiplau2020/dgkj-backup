@@ -13,14 +13,14 @@
 
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { AppDataSource } from '../../config/data-source';
+import { AppDataSource } from '../../../config/data-source';
 import { OpApp, OpApiKey, OpDeveloper, OpApiLog, OpApiQuota } from '../entity';
-import { OpCode, opResult } from '../../utils/op-code';
+import { OpCode, opResult } from '../../../utils/op-code';
 import {
   sortParams,
   verifySign,
   decryptSecret,
-} from '../../utils/signature';
+} from '../../../utils/signature';
 
 declare global {
   namespace Express {
@@ -92,11 +92,10 @@ export async function apiGateway(req: Request, res: Response, next: NextFunction
       method: req.method,
       apiPath: req.path,
       clientIp,
-      userAgent: req.headers['user-agent'],
       requestParams: JSON.stringify(req.body || req.query).slice(0, 2000),
       result: 'pending',
       httpCode: 200,
-      code: OpCode.SUCCESS,
+      code: OpCode.SUCCESS.toString(),
     });
     apiLog = await logRepo.save(apiLog);
     req.opApiLogId = apiLog.id;
@@ -346,7 +345,7 @@ async function updateApiLog(req: Request, data: Partial<OpApiLog>): Promise<void
 }
 
 /** 错误响应 */
-function respondError(res: Response, req: Request, code: string, message?: string): void {
+function respondError(res: Response, req: Request, code: number, message?: string): void {
   const result = opResult(code, null, message);
 
   // 更新日志
@@ -354,7 +353,7 @@ function respondError(res: Response, req: Request, code: string, message?: strin
     updateApiLog(req, {
       result: 'error',
       httpCode: 401,
-      code,
+      code: code.toString(),
       message,
     });
   }

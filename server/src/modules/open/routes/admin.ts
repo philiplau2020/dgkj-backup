@@ -2,11 +2,11 @@
  * 开放平台管理后台 API (/basic-api/open/*)
  */
 import { Router, Request, Response, NextFunction } from 'express';
-import { authGuard } from '../../common/middleware/auth.middleware';
-import { developerService, appService } from './service/open-platform.service';
-import { AppDataSource } from '../../config/data-source';
-import { OpApiLog, OpApp, OpWebhook } from './entity';
-import { OpCode, opResult } from '../../utils/op-code';
+import { authGuard } from '../../../common/middleware/auth.middleware';
+import { developerService, appService } from '../service/open-platform.service';
+import { AppDataSource } from '../../../config/data-source';
+import { OpApiLog, OpApp, OpWebhook } from '../entity';
+import { OpCode, opResult } from '../../../utils/op-code';
 
 const router = Router();
 
@@ -218,7 +218,7 @@ router.post('/webhook', async (req: Request, res: Response, next: NextFunction) 
 router.put('/webhook/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await AppDataSource.getRepository(OpWebhook).update(req.params.id, req.body);
-    res.json(opResult(OpCode.SUCCESS));
+    res.json(opResult(OpCode.SUCCESS, null));
   } catch (e) {
     next(e);
   }
@@ -228,7 +228,7 @@ router.put('/webhook/:id', async (req: Request, res: Response, next: NextFunctio
 router.delete('/webhook/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await AppDataSource.getRepository(OpWebhook).delete(req.params.id);
-    res.json(opResult(OpCode.SUCCESS));
+    res.json(opResult(OpCode.SUCCESS, null));
   } catch (e) {
     next(e);
   }

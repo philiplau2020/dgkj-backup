@@ -80,6 +80,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Row, Col, Statistic, DatePicker, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -108,24 +109,27 @@ function getStatusColor(status: number) { return { 0: 'default', 1: 'error', 2: 
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 30; i++) {
-      const status = Math.random() > 0.3 ? 2 : (Math.random() > 0.5 ? 1 : 0);
-      mockData.push({
-        id: i, batchNo: 'BATCH' + new Date().toISOString().split('T')[0].replace(/-/g, '') + i.toString().padStart(4, '0'),
-        checkDate: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
-        ifCode: ['CITIC_QR', 'WX_QR', 'ALI_QR'][i % 3], ifCodeName: ['中信银行', '微信', '支付宝'][i % 3],
-        orderCount: Math.floor(Math.random() * 500) + 100, checkAmount: (Math.random() * 50000 + 10000).toFixed(2),
-        diffCount: status === 2 ? 0 : Math.floor(Math.random() * 5),
-        diffAmount: status === 2 ? '0.00' : (Math.random() * 100).toFixed(2), status, statusName: ['未对账', '有差异', '已平账'][status],
-        createdAt: new Date(Date.now() - i * 86400000).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.batchNo) params.batchNo = searchForm.batchNo;
+    if (searchForm.ifCode) params.ifCode = searchForm.ifCode;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    if (searchForm.checkDate) params.checkDate = searchForm.checkDate.format('YYYY-MM-DD');
+    
+    const res = await defHttp.get({ url: '/basic-api/check/batch/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.totalCount = dataSource.value.length;
+      stats.settledCount = dataSource.value.filter(item => item.status === 2).length;
+      stats.diffCount = dataSource.value.filter(item => item.status === 1).length;
+      stats.diffAmount = dataSource.value.filter(item => item.status === 1).reduce((sum, item) => sum + Number(item.diffAmount), 0);
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.totalCount = mockData.length;
-    stats.settledCount = mockData.filter(item => item.status === 2).length;
-    stats.diffCount = mockData.filter(item => item.status === 1).length;
-    stats.diffAmount = mockData.filter(item => item.status === 1).reduce((sum, item) => sum + Number(item.diffAmount), 0);
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

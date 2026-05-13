@@ -1,22 +1,22 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  List = ApiPath.MchList,
-  Get = ApiPath.Mch,
-  Create = ApiPath.Mch,
-  Update = ApiPath.Mch,
-  Review = ApiPath.MchReview,
-  AppList = ApiPath.MchAppList,
-  AppCreate = ApiPath.MchApp,
-  AppUpdate = ApiPath.MchApp,
-  StoreList = ApiPath.MchStoreList,
-  StoreCreate = ApiPath.MchStore,
-  StoreUpdate = ApiPath.MchStore,
-  RateList = ApiPath.MchRateList,
-  RateCreate = ApiPath.MchRate,
-  RateUpdate = ApiPath.MchRate,
-}
+const Api = {
+  List: ApiPath.MchList,
+  Get: ApiPath.Mch,
+  Create: ApiPath.Mch,
+  Update: ApiPath.Mch,
+  Review: ApiPath.MchReview,
+  AppList: ApiPath.MchAppList,
+  AppCreate: ApiPath.MchApp,
+  AppUpdate: ApiPath.MchApp,
+  StoreList: ApiPath.MchStoreList,
+  StoreCreate: ApiPath.MchStore,
+  StoreUpdate: ApiPath.MchStore,
+  RateList: ApiPath.MchRateList,
+  RateCreate: ApiPath.MchRate,
+  RateUpdate: ApiPath.MchRate,
+} as const;
 
 export interface MchItem {
   id: string;

@@ -2,7 +2,6 @@
  * 运维监控 API
  */
 import { defHttp } from '@/utils/http/axios';
-import { ApiPath } from '../config';
 
 export const API_BASE = '/basic-api';
 
@@ -47,33 +46,33 @@ export const OpsApiPath = {
   OpsAlertRule: `${API_BASE}/ops/alert/rule`,
 } as const;
 
-export enum Api {
-  OpsOverview = OpsApiPath.OpsOverview,
-  OpsServerList = OpsApiPath.OpsServerList,
-  OpsServerDetail = OpsApiPath.OpsServerDetail,
-  OpsServiceList = OpsApiPath.OpsServiceList,
-  OpsServiceDetail = OpsApiPath.OpsServiceDetail,
-  OpsServiceHealth = OpsApiPath.OpsServiceHealth,
-  OpsAppMetrics = OpsApiPath.OpsAppMetrics,
-  OpsAppList = OpsApiPath.OpsAppList,
-  OpsAppJVM = OpsApiPath.OpsAppJVM,
-  OpsAppThread = OpsApiPath.OpsAppThread,
-  OpsAppSql = OpsApiPath.OpsAppSql,
-  OpsNetworkList = OpsApiPath.OpsNetworkList,
-  OpsNetworkPort = OpsApiPath.OpsNetworkPort,
-  OpsNetworkBandwidth = OpsApiPath.OpsNetworkBandwidth,
-  OpsNetworkConnection = OpsApiPath.OpsNetworkConnection,
-  OpsBusinessOverview = OpsApiPath.OpsBusinessOverview,
-  OpsBusinessTrend = OpsApiPath.OpsBusinessTrend,
-  OpsBusinessKpi = OpsApiPath.OpsBusinessKpi,
-  OpsLogList = OpsApiPath.OpsLogList,
-  OpsLogDetail = OpsApiPath.OpsLogDetail,
-  OpsLogStatistics = OpsApiPath.OpsLogStatistics,
-  OpsAlertList = OpsApiPath.OpsAlertList,
-  OpsAlertDetail = OpsApiPath.OpsAlertDetail,
-  OpsAlertHandle = OpsApiPath.OpsAlertHandle,
-  OpsAlertRule = OpsApiPath.OpsAlertRule,
-}
+export const Api = {
+  OpsOverview: OpsApiPath.OpsOverview,
+  OpsServerList: OpsApiPath.OpsServerList,
+  OpsServerDetail: OpsApiPath.OpsServerDetail,
+  OpsServiceList: OpsApiPath.OpsServiceList,
+  OpsServiceDetail: OpsApiPath.OpsServiceDetail,
+  OpsServiceHealth: OpsApiPath.OpsServiceHealth,
+  OpsAppMetrics: OpsApiPath.OpsAppMetrics,
+  OpsAppList: OpsApiPath.OpsAppList,
+  OpsAppJVM: OpsApiPath.OpsAppJVM,
+  OpsAppThread: OpsApiPath.OpsAppThread,
+  OpsAppSql: OpsApiPath.OpsAppSql,
+  OpsNetworkList: OpsApiPath.OpsNetworkList,
+  OpsNetworkPort: OpsApiPath.OpsNetworkPort,
+  OpsNetworkBandwidth: OpsApiPath.OpsNetworkBandwidth,
+  OpsNetworkConnection: OpsApiPath.OpsNetworkConnection,
+  OpsBusinessOverview: OpsApiPath.OpsBusinessOverview,
+  OpsBusinessTrend: OpsApiPath.OpsBusinessTrend,
+  OpsBusinessKpi: OpsApiPath.OpsBusinessKpi,
+  OpsLogList: OpsApiPath.OpsLogList,
+  OpsLogDetail: OpsApiPath.OpsLogDetail,
+  OpsLogStatistics: OpsApiPath.OpsLogStatistics,
+  OpsAlertList: OpsApiPath.OpsAlertList,
+  OpsAlertDetail: OpsApiPath.OpsAlertDetail,
+  OpsAlertHandle: OpsApiPath.OpsAlertHandle,
+  OpsAlertRule: OpsApiPath.OpsAlertRule,
+} as const;
 
 // 通用分页参数
 export interface OpsListParams {

@@ -310,9 +310,8 @@ function getChannelColor(code: string) {
 async function fetchMchList() {
   try {
     const res = await getMchSelectList();
-    if (res.result) {
-      mchList.value = res.result;
-    }
+    const data = res?.data || res;
+    mchList.value = data?.list || data?.result || [];
   } catch (error) {
     console.error('获取商户列表失败', error);
   }
@@ -331,9 +330,13 @@ async function fetchData() {
     if (searchForm.status !== undefined) params.status = searchForm.status;
 
     const res = await getMchAppList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const data = res?.data || res;
+    if (data?.list) {
+      dataSource.value = data.list || [];
+      pagination.total = data.total || 0;
+    } else if (data?.result) {
+      dataSource.value = data.result.list || [];
+      pagination.total = data.result.total || 0;
     }
   } catch (error) {
     console.error('获取数据失败', error);

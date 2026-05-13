@@ -236,6 +236,7 @@ import {
 } from 'ant-design-vue';
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -298,56 +299,28 @@ function getStatusName(status: number) {
   return { 0: '待处理', 1: '处理中', 2: '已完成', 3: '已失败' }[status] || '未知';
 }
 
-function generateMockData() {
-  const data = [];
-  for (let i = 1; i <= 20; i++) {
-    const statuses = [0, 0, 1, 2, 3];
-    const status = statuses[i % 5];
-    data.push({
-      id: i,
-      mchNo: 'M' + String(10000 + i),
-      mchName: '商户' + i,
-      mchType: i % 2 === 0 ? 1 : 2,
-      contactName: ['张三', '李四', '王五', '赵六'][i % 4],
-      contactMobile: '138' + String(10000000 + i * 111111),
-      contactEmail: `mch${i}@example.com`,
-      agentName: i % 3 === 0 ? '代理商A' : i % 3 === 1 ? '代理商B' : null,
-      bankName: '中国工商银行',
-      bankCard: '622202****' + (1000 + i),
-      province: '广东省',
-      city: '深圳市',
-      address: '南山区科技园路' + i + '号',
-      status,
-      failReason: status === 3 ? '资质材料不完整' : '',
-      createdAt: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString().replace('T', ' ').substring(0, 19),
-      processTime: status >= 2 ? new Date().toISOString().replace('T', ' ').substring(0, 19) : null,
-    });
-  }
-  stats.pendingCount = data.filter(d => d.status === 0).length;
-  stats.processingCount = data.filter(d => d.status === 1).length;
-  stats.completedCount = data.filter(d => d.status === 2).length;
-  stats.failedCount = data.filter(d => d.status === 3).length;
-  return data;
-}
-
 async function fetchData() {
   loading.value = true;
   try {
-    const res = await fetch(`/basic-api/mch/entry/list?${new URLSearchParams({
-      page: String(pagination.current),
-      pageSize: String(pagination.pageSize),
-    })}`);
-    const json = await res.json();
-    if (json.result) {
-      dataSource.value = json.result.list || [];
-      pagination.total = json.result.total || 0;
+    const res = await defHttp.get({
+      url: '/basic-api/mch/entry/list',
+      params: { page: pagination.current, pageSize: pagination.pageSize },
+    });
+    if (res && res.list) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      // 更新统计数据
+      stats.pendingCount = dataSource.value.filter(d => d.status === 0).length;
+      stats.processingCount = dataSource.value.filter(d => d.status === 1).length;
+      stats.completedCount = dataSource.value.filter(d => d.status === 2).length;
+      stats.failedCount = dataSource.value.filter(d => d.status === 3).length;
     } else {
-      dataSource.value = generateMockData();
-      pagination.total = dataSource.value.length;
+      dataSource.value = [];
+      pagination.total = 0;
     }
   } catch (e) {
-    dataSource.value = generateMockData();
-    pagination.total = dataSource.value.length;
+    dataSource.value = [];
+    pagination.total = 0;
   } finally {
     loading.value = false;
   }
@@ -371,11 +344,7 @@ function openEntryModal() {
 
 async function handleFormSubmit() {
   try {
-    await fetch('/basic-api/mch/entry', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
+    await defHttp.post({ url: '/basic-api/mch/entry', data: formData });
     message.success('进件申请已提交');
     formVisible.value = false;
     fetchData();

@@ -60,6 +60,9 @@ export function transformRouteToMenu(routeModList: AppRouteModule[], routerMappi
       routeList.push(item);
     }
   });
+  
+  console.log('[menuHelper] routeList before treeMap:', routeList.map(r => ({ path: r.path, children: r.children?.length || 0 })));
+  
   // 提取树指定结构
   const list = treeMap(routeList, {
     conversion: (node: AppRouteRecordRaw) => {
@@ -75,8 +78,14 @@ export function transformRouteToMenu(routeModList: AppRouteModule[], routerMappi
       };
     },
   });
+  
+  console.log('[menuHelper] list after treeMap:', JSON.stringify(list.map(l => ({ path: l.path, name: l.name, children: l.children?.length || 0 }))));
+  
   // 路径处理
   joinParentPath(list);
+  
+  console.log('[menuHelper] list after joinParentPath:', JSON.stringify(list.map(l => ({ path: l.path, name: l.name, children: l.children?.length || 0 }))));
+  
   return cloneDeep(list);
 }
 

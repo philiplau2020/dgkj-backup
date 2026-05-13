@@ -5,31 +5,49 @@ import { authGuard } from '../../common/middleware/auth.middleware';
 const router = Router();
 router.use(authGuard);
 
-// Channel routes
-router.get('/channel/list', channelController.getChannelList);
-router.get('/channel/:id', channelController.getChannelById);
-router.post('/channel', channelController.createChannel);
-router.put('/channel/:id', channelController.updateChannel);
+// ========== Routes for /basic-api/channel/* ==========
 
-// Channel Mch routes
-router.get('/channel-mch/list', channelController.getChannelMchList);
-router.post('/channel-mch', channelController.createChannelMch);
+// Channel list
+router.get('/list', channelController.getChannelList.bind(channelController));
+router.get('/channel/list', channelController.getChannelList.bind(channelController));
 
-// Channel Route routes
-router.get('/route/list', channelController.getChannelRouteList);
-router.post('/route', channelController.createChannelRoute);
-router.put('/route/:id', channelController.updateChannelRoute);
+// MCH routes (frontend uses /channel/mch/*)
+router.get('/mch/list', channelController.getChannelMchList.bind(channelController));
+router.post('/mch', channelController.createChannelMch.bind(channelController));
+router.put('/mch/:id', channelController.updateChannelMch.bind(channelController));
+router.delete('/mch/:id', channelController.deleteChannelMch.bind(channelController));
 
-// Pool routes
-router.get('/pool/list', channelController.getPoolList);
-router.post('/pool', channelController.createPool);
+// Channel MCH (legacy)
+router.get('/channel-mch/list', channelController.getChannelMchList.bind(channelController));
+router.post('/channel-mch', channelController.createChannelMch.bind(channelController));
+
+// Route rules
+router.get('/route/list', channelController.getRouteList.bind(channelController));
+router.post('/route', channelController.createRoute.bind(channelController));
+router.put('/route/:id', channelController.updateRoute.bind(channelController));
 
 // Strategy routes
-router.get('/strategy/list', channelController.getStrategyList);
-router.post('/strategy', channelController.createStrategy);
-router.put('/strategy/:id', channelController.updateStrategy);
+router.get('/strategy/list', channelController.getStrategyList.bind(channelController));
+router.post('/strategy', channelController.createStrategy.bind(channelController));
+router.put('/strategy/:id', channelController.updateStrategy.bind(channelController));
 
-// Recommend channel
-router.get('/recommend', channelController.getRecommendedChannel);
+// Pool routes (works when mounted at /basic-api/pool)
+router.get('/channel/list', channelController.getPoolList.bind(channelController));
+router.get('/channel/info', channelController.getChannelById.bind(channelController));
+router.get('/channel/stats', channelController.getChannelStats.bind(channelController));
+router.post('/channel/add', channelController.createPool.bind(channelController));
+router.get('/list', channelController.getPoolList.bind(channelController));
+
+// ========== Routes for /basic-api/pool/* (when mounted separately) ==========
+// These work when poolRoutes is mounted at /basic-api/pool
+
+// Parameterized routes
+router.get('/channel/:id', channelController.getChannelById.bind(channelController));
+router.put('/channel/:id', channelController.updateChannel.bind(channelController));
+
+// Other routes
+router.get('/channel/recommend', channelController.getRecommendedChannel.bind(channelController));
+router.get('/channel/stats', channelController.getChannelStats.bind(channelController));
+router.get('/recommend', channelController.getRecommendedChannel.bind(channelController));
 
 export default router;

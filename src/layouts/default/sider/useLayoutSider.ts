@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 
-import { computed, unref, onMounted, nextTick } from 'vue';
+import { computed, unref, onMounted, nextTick, watch } from 'vue';
 
 import { TriggerEnum } from '@/enums/menuEnum';
 
@@ -64,13 +64,54 @@ export function useTrigger(getIsMobile: Ref<boolean>) {
  * @param dragBarRef
  */
 export function useDragLine(siderRef: Ref<any>, dragBarRef: Ref<any>, mix = false) {
-  const { getMiniWidthNumber, getCollapsed, setMenuSetting } = useMenuSetting();
+  const { getMiniWidthNumber, getCollapsed, getCanDrag, setMenuSetting } = useMenuSetting();
+
+  let dragInitialized = false;
+
+  function bindDragEvent() {
+    const ele = getEl(dragBarRef);
+    if (!ele || dragInitialized) return;
+    const wrap = getEl(siderRef);
+    if (!wrap) return;
+
+    dragInitialized = true;
+    ele.onmousedown = (e: any) => {
+      if (!unref(getCanDrag)) return;
+      wrap.style.transition = 'unset';
+      const clientX = e?.clientX;
+      ele.left = ele.offsetLeft;
+      handleMouseMove(ele, wrap, clientX);
+      removeMouseup(ele);
+      ele.setCapture?.();
+      return false;
+    };
+  }
+
+  function unbindDragEvent() {
+    const ele = getEl(dragBarRef);
+    if (ele) {
+      ele.onmousedown = null;
+    }
+    dragInitialized = false;
+  }
 
   onMounted(() => {
     nextTick(() => {
-      const exec = useDebounceFn(changeWrapWidth, 80);
+      const exec = useDebounceFn(bindDragEvent, 80);
       exec();
     });
+  });
+
+  // Watch canDrag changes and rebind/unbind drag events
+  watch(getCanDrag, (canDrag) => {
+    if (canDrag) {
+      nextTick(() => {
+        unbindDragEvent();
+        bindDragEvent();
+      });
+    } else {
+      unbindDragEvent();
+    }
   });
 
   function getEl(elRef: Ref<ElRef | ComponentRef>): any {
@@ -119,23 +160,6 @@ export function useDragLine(siderRef: Ref<any>, dragBarRef: Ref<any>, mix = fals
       }
 
       ele.releaseCapture?.();
-    };
-  }
-
-  function changeWrapWidth() {
-    const ele = getEl(dragBarRef);
-    if (!ele) return;
-    const wrap = getEl(siderRef);
-    if (!wrap) return;
-
-    ele.onmousedown = (e: any) => {
-      wrap.style.transition = 'unset';
-      const clientX = e?.clientX;
-      ele.left = ele.offsetLeft;
-      handleMouseMove(ele, wrap, clientX);
-      removeMouseup(ele);
-      ele.setCapture?.();
-      return false;
     };
   }
 

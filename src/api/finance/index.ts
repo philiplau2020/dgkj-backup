@@ -1,17 +1,17 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  AccountList = ApiPath.FinanceAccountList,
-  AccountGet = ApiPath.FinanceAccount,
-  RecordList = ApiPath.FinanceRecordList,
-  SettlementList = ApiPath.FinanceSettlementList,
-  SettlementCreate = ApiPath.FinanceSettlement,
-  SettlementReview = ApiPath.FinanceSettlementReview,
-  WithdrawList = ApiPath.FinanceWithdrawList,
-  WithdrawCreate = ApiPath.FinanceWithdraw,
-  StatementList = ApiPath.FinanceStatementList,
-}
+const Api = {
+  AccountList: ApiPath.FinanceAccountList,
+  AccountGet: ApiPath.FinanceAccount,
+  RecordList: ApiPath.FinanceRecordList,
+  SettlementList: ApiPath.FinanceSettlementList,
+  SettlementCreate: ApiPath.FinanceSettlement,
+  SettlementReview: ApiPath.FinanceSettlementReview,
+  WithdrawList: ApiPath.FinanceWithdrawList,
+  WithdrawCreate: ApiPath.FinanceWithdraw,
+  StatementList: ApiPath.FinanceStatementList,
+} as const;
 
 export interface AccountItem {
   id: string;

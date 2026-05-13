@@ -73,13 +73,10 @@
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'orderAmount'">
-              <span style="color: #f5222d; font-weight: 500;">¥{{ Number(record.orderAmount).toLocaleString() }}</span>
+              <span style="color: #f5222d; font-weight: 500;">¥{{ Number(record.amount || 0).toLocaleString() }}</span>
             </template>
-            <template v-else-if="column.key === 'refundAmount'">
-              <span style="color: #faad14;">¥{{ Number(record.refundAmount).toLocaleString() }}</span>
-            </template>
-            <template v-else-if="column.key === 'netAmount'">
-              <span style="color: #52c41a; font-weight: 500;">¥{{ (Number(record.orderAmount) - Number(record.refundAmount)).toLocaleString() }}</span>
+            <template v-else-if="column.key === 'successAmount'">
+              <span style="color: #52c41a; font-weight: 500;">¥{{ Number(record.successAmount || 0).toLocaleString() }}</span>
             </template>
           </template>
         </Table>
@@ -93,6 +90,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { Card, Form, FormItem, RadioGroup, RadioButton, RangePicker, Button, Row, Col, Statistic, Table } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import * as echarts from 'echarts';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const tableData = ref<any[]>([]);
@@ -121,11 +119,10 @@ const stats = reactive({
 
 const columns = [
   { title: '日期', dataIndex: 'date', key: 'date', width: 120 },
-  { title: '交易笔数', dataIndex: 'orderCount', key: 'orderCount', width: 120 },
+  { title: '交易笔数', dataIndex: 'count', key: 'count', width: 120 },
   { title: '交易金额', key: 'orderAmount', width: 150 },
-  { title: '退款笔数', dataIndex: 'refundCount', key: 'refundCount', width: 120 },
-  { title: '退款金额', key: 'refundAmount', width: 150 },
-  { title: '净收入', key: 'netAmount', width: 150 },
+  { title: '成功笔数', dataIndex: 'successCount', key: 'successCount', width: 120 },
+  { title: '成功金额', key: 'successAmount', width: 150 },
 ];
 
 const trendChartRef = ref<HTMLElement>();
@@ -141,16 +138,20 @@ async function fetchData() {
     if (searchForm.startDate) params.append('startDate', searchForm.startDate);
     if (searchForm.endDate) params.append('endDate', searchForm.endDate);
 
-    const res = await fetch(`/basic-api/stat/trade/trend?${params}`);
-    const data = await res.json();
+    const res = await defHttp.get({ url: '/basic-api/stat/trade/trend', params: {
+      type: searchForm.type,
+      startDate: searchForm.startDate || undefined,
+      endDate: searchForm.endDate || undefined,
+    } });
+    const data = res;
 
-    if (data.result) {
-      tableData.value = data.result;
+    if (data && data.data) {
+      tableData.value = data.data;
       pagination.total = data.result.length;
 
       // 计算统计
-      stats.totalCount = data.result.reduce((sum: number, item: any) => sum + item.orderCount, 0);
-      stats.totalAmount = data.result.reduce((sum: number, item: any) => sum + item.orderAmount, 0);
+      stats.totalCount = (data.data || []).reduce((sum: number, item: any) => sum + Number(item.count || 0), 0);
+      stats.totalAmount = (data.data || []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
       stats.totalRefundCount = data.result.reduce((sum: number, item: any) => sum + item.refundCount, 0);
       stats.totalRefundAmount = data.result.reduce((sum: number, item: any) => sum + item.refundAmount, 0);
 
@@ -179,16 +180,16 @@ function updateCharts(data: any[]) {
         { type: 'value', name: '笔数', axisLabel: { formatter: (val: number) => val.toLocaleString() } },
       ],
       series: [
-        { name: '交易金额', type: 'bar', data: data.map(item => item.orderAmount), itemStyle: { color: '#1890ff' } },
-        { name: '退款金额', type: 'bar', data: data.map(item => item.refundAmount), itemStyle: { color: '#faad14' } },
-        { name: '交易笔数', type: 'line', yAxisIndex: 1, data: data.map(item => item.orderCount), itemStyle: { color: '#52c41a' } },
+        { name: '交易金额', type: 'bar', data: data.data.map((item: any) => item.amount), itemStyle: { color: '#1890ff' } },
+        { name: '成功金额', type: 'bar', data: data.data.map((item: any) => item.successAmount || 0), itemStyle: { color: '#52c41a' } },
+        { name: '交易笔数', type: 'line', yAxisIndex: 1, data: data.data.map((item: any) => item.count), itemStyle: { color: '#faad14' } },
       ],
     });
   }
 
   if (pieChart) {
-    const totalAmount = data.reduce((sum: number, item: any) => sum + item.orderAmount, 0);
-    const refundAmount = data.reduce((sum: number, item: any) => sum + item.refundAmount, 0);
+    const totalAmount = (data.data || []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+    const successAmount = (data.data || []).reduce((sum: number, item: any) => sum + Number(item.successAmount || 0), 0);
     pieChart.setOption({
       tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ¥${params.value.toLocaleString()} (${params.percent}%)` },
       legend: { bottom: 0 },
@@ -200,8 +201,8 @@ function updateCharts(data: any[]) {
           itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
           label: { show: true, formatter: '{b}\n{d}%' },
           data: [
-            { value: totalAmount - refundAmount, name: '实际交易', itemStyle: { color: '#1890ff' } },
-            { value: refundAmount, name: '退款', itemStyle: { color: '#faad14' } },
+            { value: successAmount, name: '成功交易', itemStyle: { color: '#52c41a' } },
+            { value: totalAmount - successAmount, name: '失败交易', itemStyle: { color: '#f5222d' } },
           ],
         },
       ],

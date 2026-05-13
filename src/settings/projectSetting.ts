@@ -93,7 +93,7 @@ const setting: ProjectConfig = {
     collapsedShowTitle: false,
     // Whether it can be dragged
     // Only limited to the opening of the left menu, the mouse has a drag bar on the right side of the menu
-    canDrag: false,
+    canDrag: true,
     // Whether to show no dom
     show: true,
     // Whether to show dom

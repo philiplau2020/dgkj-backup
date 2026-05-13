@@ -5,7 +5,7 @@ const openPlatform: AppRouteModule = {
   path: '/open-platform',
   name: 'OpenPlatform',
   component: LAYOUT,
-  redirect: '/open-platform/overview',
+  redirect: '/open-platform/docs',
   meta: {
     orderNo: 3,
     icon: 'ant-design:api-outlined',
@@ -13,28 +13,16 @@ const openPlatform: AppRouteModule = {
   },
   children: [
     {
-      path: 'overview',
-      name: 'OpenPlatformOverview',
-      component: () => import('@/views/open-platform/overview/index.vue'),
-      meta: { title: '平台首页' },
+      path: 'docs',
+      name: 'OpenPlatformDocs',
+      component: () => import('@/views/open-platform/docs/index.vue'),
+      meta: { title: 'API文档', icon: 'ant-design:book-outlined' },
     },
     {
       path: 'developer',
       name: 'OpenPlatformDeveloper',
       component: () => import('@/views/open-platform/developer/index.vue'),
       meta: { title: '开发者中心' },
-    },
-    {
-      path: 'document',
-      name: 'OpenPlatformDocument',
-      component: () => import('@/views/open-platform/document/index.vue'),
-      meta: { title: 'API文档' },
-    },
-    {
-      path: 'debug',
-      name: 'OpenPlatformDebug',
-      component: () => import('@/views/open-platform/debug/index.vue'),
-      meta: { title: '在线调试' },
     },
     {
       path: 'webhook',

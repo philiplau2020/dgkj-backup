@@ -21,7 +21,6 @@ import { AxiosRetry } from '@/utils/http/axios/axiosRetry';
 import axios from 'axios';
 
 const globSetting = useGlobSetting();
-const urlPrefix = globSetting.urlPrefix;
 const { createMessage, createErrorModal, createSuccessModal } = useMessage();
 
 /**
@@ -78,12 +77,17 @@ const transform: AxiosTransform = {
     // 在此处根据自己项目的实际情况对不同的code执行不同的操作
     // 如果不希望中断当前请求，请return数据，否则直接抛出异常即可
     let timeoutMsg = '';
+    const isPublicApi = res.config.url?.includes('/api/public/');
+    
     switch (code) {
       case ResultEnum.TIMEOUT:
       case 401:
-        timeoutMsg = t('sys.api.timeoutMessage');
-        const userStore = useUserStoreWithOut();
-        userStore.logout(true);
+        // 公开API不处理401错误
+        if (!isPublicApi) {
+          timeoutMsg = t('sys.api.timeoutMessage');
+          const userStore = useUserStoreWithOut();
+          userStore.logout(true);
+        }
         break;
       default:
         if (message) {
@@ -160,8 +164,12 @@ const transform: AxiosTransform = {
    */
   requestInterceptors: (config, options) => {
     // 请求之前处理config
+    // 公开API路径不需要token
+    const publicPaths = ['/api/public/', '/api/assets/'];
+    const isPublicApi = publicPaths.some(path => config.url?.includes(path));
+    
     const token = getToken();
-    if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
+    if (token && (config as Recordable)?.requestOptions?.withToken !== false && !isPublicApi) {
       // jwt token
       (config as Recordable).headers.Authorization = options.authenticationScheme
         ? `${options.authenticationScheme} ${token}`

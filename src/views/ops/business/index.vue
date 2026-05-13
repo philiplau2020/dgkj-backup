@@ -194,7 +194,10 @@ async function fetchData() {
       getBusinessOverview().catch(() => ({})),
       getBusinessKpi().catch(() => ({})),
     ]);
-    Object.assign(kpiData, overviewRes, kpiRes);
+    // Handle unified API response format
+    const overview = overviewRes?.data || overviewRes;
+    const kpi = kpiRes?.data || kpiRes;
+    Object.assign(kpiData, overview || {}, kpi || {});
     await fetchTrend();
     initRadarChart();
   } catch (e) { console.error(e); }

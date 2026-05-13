@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dgkj
+  labels:
+    name: dgkj
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dgkj-server-config
+  namespace: dgkj
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  DB_HOST: "mysql-service"
+  DB_PORT: "3306"
+  DB_DATABASE: "dgkj"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dgkj-server-secrets
+  namespace: dgkj
+type: Opaque
+stringData:
+  DB_USERNAME: "dgkj"
+  DB_PASSWORD: "dgkj123456"
+  JWT_SECRET: "your-jwt-secret-change-in-production"
+  REDIS_PASSWORD: ""
+  RABBITMQ_DEFAULT_USER: "guest"
+  RABBITMQ_DEFAULT_PASS: "guest"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dgkj-server
+  namespace: dgkj
+  labels:
+    app: dgkj-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dgkj-server
+  template:
+    metadata:
+      labels:
+        app: dgkj-server
+    spec:
+      containers:
+      - name: dgkj-server
+        image: dgkj/server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: PORT
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: DB_PORT
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: DB_DATABASE
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dgkj-server-secrets
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dgkj-server-secrets
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dgkj-server-secrets
+              key: JWT_SECRET
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: dgkj-server-config
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dgkj-server-secrets
+              key: REDIS_PASSWORD
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: certs
+          mountPath: /app/certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: dgkj-server-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dgkj-server-service
+  namespace: dgkj
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  selector:
+    app: dgkj-server
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: dgkj-server-hpa
+  namespace: dgkj
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dgkj-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

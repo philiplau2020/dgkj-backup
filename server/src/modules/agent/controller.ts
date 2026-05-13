@@ -224,6 +224,77 @@ export class AgentController {
       next(error);
     }
   }
+
+  // ============== Audit List ==============
+  async getAuditList(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { page = 1, pageSize = 10, status } = req.query;
+      const skip = (Number(page) - 1) * Number(pageSize);
+
+      const queryBuilder = this.agentRepo.createQueryBuilder('agent');
+      if (status !== undefined) queryBuilder.andWhere('agent.status = :status', { status });
+      else queryBuilder.andWhere('agent.status = 2'); // Default to pending
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('agent.createTime', 'DESC')
+        .getManyAndCount();
+
+      res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ============== Agent Info (for current user) ==============
+  async getAgentInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return res.status(401).json({ code: 401, message: '未登录', data: null });
+
+      const agent = await this.agentRepo.findOne({ where: { id: userId } });
+      if (!agent) return res.status(404).json({ code: 404, message: '代理商不存在', data: null });
+
+      res.json({ code: 0, message: 'success', data: agent, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ============== Agent Stats ==============
+  async getAgentStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.userId;
+      let agentNo: string | undefined;
+
+      if (userId) {
+        const agent = await this.agentRepo.findOne({ where: { id: userId } });
+        agentNo = agent?.agentNo;
+      }
+
+      const whereCondition = agentNo ? { agentNo } : {};
+
+      const totalProfit = await this.profitRepo.count({ where: whereCondition });
+      const totalWithdraw = await this.withdrawRepo.count({ where: { ...whereCondition, status: 2 } });
+      const pendingWithdraw = await this.withdrawRepo.count({ where: { ...whereCondition, status: 0 } });
+
+      res.json({
+        code: 0,
+        message: 'success',
+        data: {
+          totalProfit,
+          totalWithdraw,
+          pendingWithdraw,
+          totalAmount: 0,
+          totalCount: 0,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AgentController();

@@ -108,15 +108,14 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Dropdown, Menu, MenuItem, Modal, Descriptions, DescriptionsItem, Textarea } from 'ant-design-vue';
 import { PlusOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
+import { getMchList } from '@/api/mch/merchant';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
 const pagination = reactive({ current: 1, pageSize: 10, total: 0, showSizeChanger: true, showTotal: (total: number) => `共 ${total} 条` });
 const searchForm = reactive({ mchNo: undefined as string | undefined, storeName: '' });
-const mchList = ref<any[]>([
-  { mchNo: 'M10001', mchName: '测试商户001' },
-  { mchNo: 'M10002', mchName: '测试商户002' },
-]);
+const mchList = ref<any[]>([]);
 
 const columns = [
   { title: '门店编号', dataIndex: 'storeId', key: 'storeId', width: 120 },
@@ -126,7 +125,7 @@ const columns = [
   { title: '联系电话', dataIndex: 'contactMobile', key: 'contactMobile', width: 130 },
   { title: '默认', key: 'isDefault', width: 80 },
   { title: '状态', key: 'status', width: 80 },
-  { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 170 },
   { title: '操作', key: 'action', width: 180, fixed: 'right' },
 ];
 
@@ -138,15 +137,30 @@ const formRules = { mchNo: [{ required: true, message: '请选择商户' }], sto
 const currentStore = ref<any>(null);
 const detailVisible = ref(false);
 
+async function fetchMchList() {
+  try {
+    const res = await getMchList({ page: 1, pageSize: 100 });
+    const data = res?.data || res;
+    mchList.value = data?.list || [];
+  } catch (e) {
+    console.error('获取商户列表失败', e);
+  }
+}
+
 async function fetchData() {
   loading.value = true;
   try {
-    dataSource.value = [
-      { id: 1, storeId: 'S001', mchNo: 'M10001', mchName: '测试商户001', storeName: '总店', contactName: '张三', contactMobile: '13800001001', address: '北京市朝阳区XX路1号', isDefault: 1, status: 1, createdAt: '2024-01-01 10:00:00' },
-      { id: 2, storeId: 'S002', mchNo: 'M10001', mchName: '测试商户001', storeName: '分店A', contactName: '李四', contactMobile: '13800001002', address: '北京市海淀区XX路2号', isDefault: 0, status: 1, createdAt: '2024-01-05 14:30:00' },
-      { id: 3, storeId: 'S003', mchNo: 'M10002', mchName: '测试商户002', storeName: '旗舰店', contactName: '王五', contactMobile: '13800001003', address: '上海市浦东新区XX路3号', isDefault: 1, status: 1, createdAt: '2024-01-10 09:15:00' },
-    ];
-    pagination.total = dataSource.value.length;
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.storeName) params.storeName = searchForm.storeName;
+    
+    const res = await defHttp.get({ url: '/basic-api/mch/store/list', params });
+    const data = res?.data || res;
+    dataSource.value = data?.list || [];
+    pagination.total = data?.total || 0;
+  } catch (error) {
+    console.error('获取门店列表失败', error);
+    dataSource.value = [];
   } finally { loading.value = false; }
 }
 
@@ -156,14 +170,27 @@ function handleTableChange(pag: any) { pagination.current = pag.current; paginat
 function openAddModal() { formMode.value = 'add'; Object.assign(formData, { mchNo: '', mchName: '', storeId: '', storeName: '', contactName: '', contactMobile: '', address: '', remark: '' }); formVisible.value = true; }
 function openEditModal(record: any) { formMode.value = 'edit'; Object.assign(formData, record); formVisible.value = true; }
 function openDetailModal(record: any) { currentStore.value = record; detailVisible.value = true; }
-async function handleFormSubmit() { message.success(formMode.value === 'add' ? '创建成功' : '更新成功'); formVisible.value = false; fetchData(); }
+async function handleFormSubmit() {
+  try {
+    if (formMode.value === 'add') {
+      await defHttp.post({ url: '/basic-api/mch/store', params: formData });
+    } else {
+      await defHttp.put({ url: `/basic-api/mch/store/${formData.id}`, params: formData });
+    }
+    message.success(formMode.value === 'add' ? '创建成功' : '更新成功');
+    formVisible.value = false;
+    fetchData();
+  } catch (e) {
+    message.error('操作失败');
+  }
+}
 function handleMenuClick(key: string, record: any) {
   if (key === 'setDefault') { message.success('设置成功'); fetchData(); }
   else if (key === 'delete') { message.warning('删除需要确认'); }
 }
 function handleExport() { message.info('导出功能开发中'); }
 
-onMounted(() => { fetchData(); });
+onMounted(() => { fetchMchList(); fetchData(); });
 </script>
 
 <style scoped>

@@ -1,9 +1,8 @@
 import { h } from 'vue';
-import { VxeGlobalRendererHandles } from 'vxe-table';
 import { getComponent } from './common';
 
 function createEmptyRender() {
-  return function (renderOpts: VxeGlobalRendererHandles.RenderEmptyOptions) {
+  return function (renderOpts: any) {
     const { name, attrs, props } = renderOpts;
 
     const Component = getComponent(name);

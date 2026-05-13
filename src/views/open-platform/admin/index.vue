@@ -1,554 +1,281 @@
 <template>
   <div class="open-platform-admin">
-    <!-- 概览统计 -->
-    <Row :gutter="16" style="margin-bottom: 16px">
+    <Row :gutter="16" class="stats-row">
       <Col :span="6">
-        <Card hoverable>
-          <Statistic title="开发者总数" :value="stats.devTotal" @click="activeTab = 'developer'">
-            <template #suffix>
-              <span style="font-size: 14px; color: #1890ff; cursor: pointer">查看</span>
-            </template>
-          </Statistic>
+        <Card>
+          <Statistic 
+            title="开发者总数" 
+            :value="stats.developerCount" 
+            :prefix="h(UserOutlined)" 
+            :value-style="{ color: '#1890ff' }"
+          />
         </Card>
       </Col>
       <Col :span="6">
-        <Card hoverable>
-          <Statistic title="应用总数" :value="stats.appTotal" @click="activeTab = 'app'">
-            <template #suffix>
-              <span style="font-size: 14px; color: #1890ff; cursor: pointer">查看</span>
-            </template>
-          </Statistic>
+        <Card>
+          <Statistic 
+            title="应用总数" 
+            :value="stats.appCount" 
+            :prefix="h(AppstoreOutlined)" 
+            :value-style="{ color: '#52c41a' }"
+          />
         </Card>
       </Col>
       <Col :span="6">
-        <Card hoverable>
-          <Statistic title="今日API调用" :value="stats.todayCalls" />
+        <Card>
+          <Statistic 
+            title="今日调用量" 
+            :value="stats.todayCallCount" 
+            :prefix="h(BarChartOutlined)" 
+            :value-style="{ color: '#faad14' }"
+          />
         </Card>
       </Col>
       <Col :span="6">
-        <Card hoverable>
-          <Statistic title="今日成功率" :value="stats.todaySuccessRate" suffix="%" :precision="2" />
+        <Card>
+          <Statistic 
+            title="平均响应时间" 
+            :value="stats.avgResponseTime" 
+            suffix="ms"
+            :prefix="h(ClockCircleOutlined)" 
+            :value-style="{ color: '#f5222d' }"
+          />
         </Card>
       </Col>
     </Row>
 
-    <!-- Tab切换 -->
-    <Card>
-      <template #title>平台管理</template>
-      <Tabs v-model:activeKey="activeTab">
-        <TabPane key="developer" tab="开发者管理">
-          <!-- 开发者搜索 -->
-          <Form layout="inline" style="margin-bottom: 16px">
-            <FormItem label="关键词">
-              <Input v-model:value="devParams.keyword" placeholder="开发者名称/用户名/公司" style="width: 200px" allowClear @pressEnter="loadDevList" />
-            </FormItem>
-            <FormItem label="状态">
-              <Select v-model:value="devParams.status" placeholder="全部" style="width: 120px" allowClear @change="loadDevList">
-                <SelectOption value="">全部</SelectOption>
-                <SelectOption value="active">已激活</SelectOption>
-                <SelectOption value="pending">待审核</SelectOption>
-                <SelectOption value="rejected">已拒绝</SelectOption>
-                <SelectOption value="suspended">已停用</SelectOption>
-              </Select>
-            </FormItem>
-            <FormItem label="等级">
-              <Select v-model:value="devParams.level" placeholder="全部" style="width: 120px" allowClear @change="loadDevList">
-                <SelectOption value="">全部</SelectOption>
-                <SelectOption value="trial">体验版</SelectOption>
-                <SelectOption value="basic">基础版</SelectOption>
-                <SelectOption value="professional">专业版</SelectOption>
-                <SelectOption value="enterprise">企业版</SelectOption>
-              </Select>
-            </FormItem>
-            <FormItem>
-              <Space>
-                <Button type="primary" @click="loadDevList"><SearchOutlined /> 搜索</Button>
-                <Button @click="resetDevParams">重置</Button>
-              </Space>
-            </FormItem>
-          </Form>
+    <Row :gutter="16" class="charts-row">
+      <Col :span="16">
+        <Card title="调用量趋势">
+          <div ref="trendChartRef" class="chart-container"></div>
+        </Card>
+      </Col>
+      <Col :span="8">
+        <Card title="应用分布">
+          <div ref="pieChartRef" class="chart-container"></div>
+        </Card>
+      </Col>
+    </Row>
 
-          <Table :data-source="devList" :columns="devColumns" :loading="loading" :pagination="devPagination" @change="handleDevTableChange" row-key="developerId" size="small">
+    <Row :gutter="16">
+      <Col :span="24">
+        <Card title="最新开发者">
+          <template #extra>
+            <Button type="link" @click="$router.push('/open-platform-admin/developer')">查看更多</Button>
+          </template>
+          <Table 
+            :columns="developerColumns" 
+            :data-source="recentDevelopers" 
+            :pagination="false"
+            size="small"
+          >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'level'">
-                <Tag :color="levelColor(record.level)">{{ levelLabel(record.level) }}</Tag>
+              <template v-if="column.key === 'status'">
+                <Badge :status="record.status === 'active' ? 'success' : 'error'" />
+                <span>{{ record.status === 'active' ? '正常' : '禁用' }}</span>
               </template>
-              <template v-else-if="column.key === 'status'">
-                <Badge :status="statusBadge(record.status)" />
-                {{ statusLabel(record.status) }}
-              </template>
-              <template v-else-if="column.key === 'appCount'">
-                <Tag color="blue">{{ record.appCount }}</Tag>
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <Space>
-                  <Button type="link" size="small" @click="showDevDetail(record)"><EyeOutlined /> 详情</Button>
-                  <Button v-if="record.status === 'pending'" type="link" size="small" @click="reviewDev(record, 'active')"><CheckOutlined /> 通过</Button>
-                  <Button v-if="record.status === 'pending'" type="link" size="small" danger @click="reviewDev(record, 'rejected')"><CloseOutlined /> 拒绝</Button>
-                  <Button type="link" size="small" @click="changeLevel(record)"><SettingOutlined /> 等级</Button>
-                </Space>
+              <template v-else-if="column.key === 'level'">
+                <Tag :color="levelColorMap[record.level]">{{ levelNameMap[record.level] }}</Tag>
               </template>
             </template>
           </Table>
-        </TabPane>
+        </Card>
+      </Col>
+    </Row>
 
-        <TabPane key="app" tab="应用管理">
-          <!-- 应用搜索 -->
-          <Form layout="inline" style="margin-bottom: 16px">
-            <FormItem label="关键词">
-              <Input v-model:value="appParams.keyword" placeholder="应用名称/AppKey" style="width: 200px" allowClear @pressEnter="loadAppList" />
-            </FormItem>
-            <FormItem label="状态">
-              <Select v-model:value="appParams.status" placeholder="全部" style="width: 120px" allowClear @change="loadAppList">
-                <SelectOption value="">全部</SelectOption>
-                <SelectOption value="active">正常</SelectOption>
-                <SelectOption value="pending">待审核</SelectOption>
-                <SelectOption value="suspended">停用</SelectOption>
-              </Select>
-            </FormItem>
-            <FormItem>
-              <Space>
-                <Button type="primary" @click="loadAppList"><SearchOutlined /> 搜索</Button>
-                <Button @click="resetAppParams">重置</Button>
-              </Space>
-            </FormItem>
-          </Form>
-
-          <Table :data-source="appList" :columns="appColumns" :loading="loading" :pagination="appPagination" @change="handleAppTableChange" row-key="appId" size="small">
+    <Row :gutter="16" class="bottom-row">
+      <Col :span="12">
+        <Card title="最新应用">
+          <template #extra>
+            <Button type="link" @click="$router.push('/open-platform-admin/app')">查看更多</Button>
+          </template>
+          <Table 
+            :columns="appColumns" 
+            :data-source="recentApps" 
+            :pagination="false"
+            size="small"
+          >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'appType'">
-                {{ appTypeLabel(record.appType) }}
-              </template>
-              <template v-else-if="column.key === 'status'">
-                <Badge :status="record.status === 'active' ? 'success' : record.status === 'pending' ? 'processing' : 'error'" />
-                {{ appStatusLabel(record.status) }}
-              </template>
-              <template v-else-if="column.key === 'payTypes'">
-                <Tag v-for="pt in (record.enabledPayTypes || []).slice(0, 2)" :key="pt" size="small" color="blue">{{ pt }}</Tag>
-                <Tag v-if="(record.enabledPayTypes || []).length > 2" size="small">+{{ record.enabledPayTypes.length - 2 }}</Tag>
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <Space>
-                  <Button type="link" size="small" @click="showAppDetail(record)"><EyeOutlined /> 详情</Button>
-                  <Button v-if="record.status === 'pending'" type="link" size="small" @click="reviewApp(record, 'active')"><CheckOutlined /> 通过</Button>
-                  <Button v-if="record.status === 'pending'" type="link" size="small" danger @click="reviewApp(record, 'suspended')"><CloseOutlined /> 拒绝</Button>
-                </Space>
+              <template v-if="column.key === 'status'">
+                <Badge :status="record.status === 'active' ? 'success' : 'warning'" />
+                <span>{{ record.status === 'active' ? '正常' : '暂停' }}</span>
               </template>
             </template>
           </Table>
-        </TabPane>
-
-        <TabPane key="log" tab="API日志">
-          <!-- 日志搜索 -->
-          <Form layout="inline" style="margin-bottom: 16px">
-            <FormItem label="应用">
-              <Select v-model:value="logParams.appId" placeholder="全部应用" style="width: 180px" allowClear @change="loadLogList">
-                <SelectOption v-for="app in appList" :key="app.appId" :value="app.appId">{{ app.appName }}</SelectOption>
-              </Select>
-            </FormItem>
-            <FormItem label="结果">
-              <Select v-model:value="logParams.result" placeholder="全部" style="width: 100px" allowClear @change="loadLogList">
-                <SelectOption value="">全部</SelectOption>
-                <SelectOption value="success">成功</SelectOption>
-                <SelectOption value="error">失败</SelectOption>
-              </Select>
-            </FormItem>
-            <FormItem label="接口">
-              <Input v-model:value="logParams.apiPath" placeholder="接口路径" style="width: 200px" allowClear @pressEnter="loadLogList" />
-            </FormItem>
-            <FormItem>
-              <Space>
-                <Button type="primary" @click="loadLogList"><SearchOutlined /> 搜索</Button>
-                <Button @click="resetLogParams">重置</Button>
-              </Space>
-            </FormItem>
-          </Form>
-
-          <!-- 实时统计 -->
-          <Row :gutter="16" style="margin-bottom: 16px">
-            <Col :span="4">
-              <Statistic title="今日调用" :value="logStats.today?.total || 0" />
-            </Col>
-            <Col :span="4">
-              <Statistic title="成功" :value="logStats.today?.success || 0" :valueStyle="{ color: '#52c41a' }" />
-            </Col>
-            <Col :span="4">
-              <Statistic title="失败" :value="logStats.today?.error || 0" :valueStyle="{ color: '#ff4d4f' }" />
-            </Col>
-            <Col :span="12">
-              <div style="padding-top: 8px">
-                <Text type="secondary">热门接口: </Text>
-                <Tag v-for="api in (logStats.topApis || []).slice(0, 3)" :key="api.apiPath">{{ api.apiPath }} ({{ api.count }})</Tag>
-              </div>
-            </Col>
-          </Row>
-
-          <Table :data-source="logList" :columns="logColumns" :loading="loading" :pagination="logPagination" @change="handleLogTableChange" row-key="id" size="small">
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'result'">
-                <Tag :color="record.result === 'success' ? 'success' : 'error'">
-                  {{ record.result === 'success' ? '成功' : '失败' }}
-                </Tag>
-              </template>
-              <template v-else-if="column.key === 'method'">
-                <Tag :color="methodColor(record.method)">{{ record.method }}</Tag>
-              </template>
-              <template v-else-if="column.key === 'apiPath'">
-                <Text code style="font-size: 12px">{{ record.apiPath }}</Text>
-              </template>
-              <template v-else-if="column.key === 'clientIp'">
-                <Text type="secondary" style="font-size: 12px">{{ record.clientIp }}</Text>
-              </template>
-              <template v-else-if="column.key === 'responseTime'">
-                <Text :type="record.responseTime > 500 ? 'danger' : record.responseTime > 200 ? 'warning' : 'secondary'">
-                  {{ record.responseTime }}ms
-                </Text>
-              </template>
-            </template>
-          </Table>
-        </TabPane>
-      </Tabs>
-    </Card>
-
-    <!-- 开发者详情弹窗 -->
-    <Modal v-model:open="showDevModal" title="开发者详情" width="700" :footer="null">
-      <Descriptions :column="2" bordered size="small" v-if="currentDev">
-        <DescriptionsItem label="开发者ID">{{ currentDev.developerId }}</DescriptionsItem>
-        <DescriptionsItem label="用户名">{{ currentDev.username }}</DescriptionsItem>
-        <DescriptionsItem label="开发者名称">{{ currentDev.developerName }}</DescriptionsItem>
-        <DescriptionsItem label="公司名称">{{ currentDev.company || '-' }}</DescriptionsItem>
-        <DescriptionsItem label="邮箱">{{ currentDev.email }}</DescriptionsItem>
-        <DescriptionsItem label="手机号">{{ currentDev.mobile }}</DescriptionsItem>
-        <DescriptionsItem label="等级">
-          <Tag :color="levelColor(currentDev.level)">{{ levelLabel(currentDev.level) }}</Tag>
-        </DescriptionsItem>
-        <DescriptionsItem label="状态">
-          <Badge :status="statusBadge(currentDev.status)" />
-          {{ statusLabel(currentDev.status) }}
-        </DescriptionsItem>
-        <DescriptionsItem label="应用数量">{{ currentDev.appCount }}</DescriptionsItem>
-        <DescriptionsItem label="累计调用">{{ currentDev.totalCallCount }}</DescriptionsItem>
-        <DescriptionsItem label="最后登录时间">{{ currentDev.lastLoginTime || '-' }}</DescriptionsItem>
-        <DescriptionsItem label="最后登录IP">{{ currentDev.lastLoginIp || '-' }}</DescriptionsItem>
-        <DescriptionsItem label="注册时间" :span="2">{{ currentDev.createTime }}</DescriptionsItem>
-      </Descriptions>
-    </Modal>
-
-    <!-- 调整等级弹窗 -->
-    <Modal v-model:open="showLevelModal" title="调整开发者等级" @ok="handleLevelChange" :confirmLoading="loading">
-      <Form :model="levelForm" layout="vertical">
-        <FormItem label="开发者">{{ currentDev?.developerName }}</FormItem>
-        <FormItem label="当前等级">
-          <Tag :color="levelColor(currentDev?.level || '')">{{ levelLabel(currentDev?.level || '') }}</Tag>
-        </FormItem>
-        <FormItem label="新等级" name="level">
-          <RadioGroup v-model:value="levelForm.level">
-            <Radio value="trial">体验版 (1应用, 100次/日)</Radio>
-            <Radio value="basic">基础版 (3应用, 1万次/日)</Radio>
-            <Radio value="professional">专业版 (10应用, 10万次/日)</Radio>
-            <Radio value="enterprise">企业版 (50应用, 100万次/日)</Radio>
-          </RadioGroup>
-        </FormItem>
-      </Form>
-    </Modal>
+        </Card>
+      </Col>
+      <Col :span="12">
+        <Card title="调用日志">
+          <template #extra>
+            <Button type="link" @click="$router.push('/open-platform-admin/log')">查看更多</Button>
+          </template>
+          <Timeline>
+            <TimelineItem v-for="log in recentLogs" :key="log.id" :color="log.success ? 'green' : 'red'">
+              <p>
+                <Tag :color="log.method === 'POST' ? 'blue' : 'green'">{{ log.method }}</Tag>
+                <code>{{ log.apiPath }}</code>
+              </p>
+              <p class="log-info">
+                <span>{{ log.appName }}</span>
+                <span>{{ log.responseTime }}ms</span>
+                <span>{{ log.createTime }}</span>
+              </p>
+            </TimelineItem>
+          </Timeline>
+        </Card>
+      </Col>
+    </Row>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import {
-  Row, Col, Card, Statistic, Tabs, TabPane, Form, FormItem, Input, Select, SelectOption,
-  Button, Space, Table, Tag, Badge, Modal, Descriptions, DescriptionsItem, Typography, Radio, RadioGroup,
-} from 'ant-design-vue';
-const { Text } = Typography;
-import {
-  SearchOutlined, EyeOutlined, CheckOutlined, CloseOutlined, SettingOutlined,
-} from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
-import * as opAdminApi from '@/api/open-platform';
+import { ref, reactive, h, onMounted } from 'vue';
+import { Row, Col, Card, Statistic, Table, Tag, Badge, Button, Timeline, TimelineItem } from 'ant-design-vue';
+import { UserOutlined, AppstoreOutlined, BarChartOutlined, ClockCircleOutlined } from '@ant-design/icons-vue';
+import * as echarts from 'echarts';
 
-const activeTab = ref('developer');
-const loading = ref(false);
-const showDevModal = ref(false);
-const showLevelModal = ref(false);
-const currentDev = ref<any>(null);
+const trendChartRef = ref<HTMLElement>();
+const pieChartRef = ref<HTMLElement>();
 
-// 统计数据
 const stats = reactive({
-  devTotal: 0,
-  appTotal: 0,
-  todayCalls: 0,
-  todaySuccessRate: 0,
+  developerCount: 1258,
+  appCount: 3421,
+  todayCallCount: 156789,
+  avgResponseTime: 45,
 });
 
-const logStats = reactive<any>({
-  today: { total: 0, success: 0, error: 0 },
-  topApis: [],
-  topApps: [],
-});
+const levelColorMap: Record<string, string> = {
+  basic: 'default',
+  standard: 'blue',
+  professional: 'purple',
+  enterprise: 'gold',
+};
 
-// 开发者相关
-const devParams = reactive({ keyword: '', status: '', level: '' });
-const devList = ref<any[]>([]);
-const devPagination = reactive({ current: 1, pageSize: 10, total: 0 });
-const levelForm = reactive({ level: 'basic' });
+const levelNameMap: Record<string, string> = {
+  basic: '基础版',
+  standard: '标准版',
+  professional: '专业版',
+  enterprise: '企业版',
+};
 
-const devColumns = [
-  { title: '开发者ID', dataIndex: 'developerId', width: 160 },
-  { title: '名称', dataIndex: 'developerName', width: 150 },
-  { title: '用户名', dataIndex: 'username', width: 120 },
-  { title: '公司', dataIndex: 'company', width: 150, ellipsis: true },
+const developerColumns = [
+  { title: '开发者ID', dataIndex: 'developerId', key: 'developerId', width: 150 },
+  { title: '开发者名称', dataIndex: 'developerName', key: 'developerName' },
   { title: '等级', key: 'level', width: 100 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '应用数', key: 'appCount', width: 80 },
-  { title: '累计调用', dataIndex: 'totalCallCount', width: 100 },
-  { title: '最后登录', dataIndex: 'lastLoginTime', width: 160 },
-  { title: '注册时间', dataIndex: 'createTime', width: 160 },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' },
+  { title: '状态', key: 'status', width: 80 },
+  { title: '注册时间', dataIndex: 'createTime', key: 'createTime', width: 170 },
 ];
-
-// 应用相关
-const appParams = reactive({ keyword: '', status: '' });
-const appList = ref<any[]>([]);
-const appPagination = reactive({ current: 1, pageSize: 10, total: 0 });
 
 const appColumns = [
-  { title: 'AppKey', dataIndex: 'appKey', width: 200, ellipsis: true },
-  { title: '应用名称', dataIndex: 'appName', width: 150 },
-  { title: '类型', key: 'appType', width: 100 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '支付方式', key: 'payTypes', width: 200 },
-  { title: '商户号', dataIndex: 'mchNo', width: 120 },
-  { title: '今日调用', dataIndex: 'todayCallCount', width: 100 },
-  { title: '累计调用', dataIndex: 'totalCallCount', width: 100 },
-  { title: '创建时间', dataIndex: 'createTime', width: 160 },
-  { title: '操作', key: 'action', width: 160 },
+  { title: '应用ID', dataIndex: 'appId', key: 'appId', width: 150 },
+  { title: '应用名称', dataIndex: 'appName', key: 'appName' },
+  { title: '开发者', dataIndex: 'developerName', key: 'developerName', width: 120 },
+  { title: '状态', key: 'status', width: 80 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 170 },
 ];
 
-// 日志相关
-const logParams = reactive({ appId: '', result: '', apiPath: '' });
-const logList = ref<any[]>([]);
-const logPagination = reactive({ current: 1, pageSize: 20, total: 0 });
+const recentDevelopers = ref([
+  { developerId: 'DEV001', developerName: '某某科技', level: 'professional', status: 'active', createTime: '2024-01-01 10:00:00' },
+  { developerId: 'DEV002', developerName: '某支付公司', level: 'enterprise', status: 'active', createTime: '2024-01-02 14:30:00' },
+  { developerId: 'DEV003', developerName: '测试商户', level: 'basic', status: 'active', createTime: '2024-01-03 09:15:00' },
+]);
 
-const logColumns = [
-  { title: '时间', dataIndex: 'createTime', width: 180 },
-  { title: '应用', dataIndex: 'appId', width: 160, ellipsis: true },
-  { title: '方法', key: 'method', width: 80 },
-  { title: '接口', key: 'apiPath', width: 220 },
-  { title: '结果', key: 'result', width: 80 },
-  { title: '响应码', dataIndex: 'httpCode', width: 80 },
-  { title: '耗时', key: 'responseTime', width: 80 },
-  { title: 'IP', key: 'clientIp', width: 140 },
-  { title: '错误码', dataIndex: 'code', width: 100 },
-];
+const recentApps = ref([
+  { appId: 'APP001', appName: '商户收款APP', developerName: '某某科技', status: 'active', createTime: '2024-01-01 10:30:00' },
+  { appId: 'APP002', appName: '官网支付', developerName: '某支付公司', status: 'active', createTime: '2024-01-02 15:00:00' },
+  { appId: 'APP003', appName: '测试应用', developerName: '测试商户', status: 'active', createTime: '2024-01-03 10:00:00' },
+]);
 
-function levelColor(level: string) {
-  const m: Record<string, string> = { trial: 'default', basic: 'blue', professional: 'purple', enterprise: 'red' };
-  return m[level] || 'default';
-}
-function levelLabel(level: string) {
-  const m: Record<string, string> = { trial: '体验版', basic: '基础版', professional: '专业版', enterprise: '企业版' };
-  return m[level] || level;
-}
-function statusBadge(status: string) {
-  const m: Record<string, string> = { active: 'success', pending: 'processing', rejected: 'error', suspended: 'error' };
-  return m[status] || 'default';
-}
-function statusLabel(status: string) {
-  const m: Record<string, string> = { active: '已激活', pending: '待审核', rejected: '已拒绝', suspended: '已停用' };
-  return m[status] || status;
-}
-function appTypeLabel(type: string) {
-  const m: Record<string, string> = { web: 'PC网站', mobile: '移动应用', miniapp: '小程序', api: 'API接入' };
-  return m[type] || type;
-}
-function appStatusLabel(status: string) {
-  const m: Record<string, string> = { active: '正常', pending: '待审核', suspended: '停用' };
-  return m[status] || status;
-}
-function methodColor(method: string) {
-  const m: Record<string, string> = { GET: 'blue', POST: 'green', PUT: 'orange', DELETE: 'red' };
-  return m[method] || 'default';
-}
-
-async function loadStats() {
-  try {
-    const res = await opAdminApi.adminGetLogStatistics() as any;
-    if (res?.code === 'OP0000') {
-      Object.assign(logStats, res.data);
-      stats.todayCalls = res.data.today?.total || 0;
-      stats.todaySuccessRate = res.data.today?.total
-        ? Math.round((res.data.today?.success / res.data.today?.total) * 10000) / 100
-        : 0;
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-async function loadDevList() {
-  loading.value = true;
-  try {
-    const res = await opAdminApi.adminGetDevList({
-      page: devPagination.current,
-      pageSize: devPagination.pageSize,
-      keyword: devParams.keyword || undefined,
-      status: devParams.status || undefined,
-      level: devParams.level || undefined,
-    }) as any;
-    if (res?.code === 'OP0000') {
-      devList.value = res.data?.list || [];
-      devPagination.total = res.data?.total || 0;
-      stats.devTotal = res.data?.total || 0;
-    }
-  } catch (e) {
-    console.error(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function loadAppList() {
-  loading.value = true;
-  try {
-    const res = await opAdminApi.adminGetAppList({
-      page: appPagination.current,
-      pageSize: appPagination.pageSize,
-      keyword: appParams.keyword || undefined,
-      status: appParams.status || undefined,
-    }) as any;
-    if (res?.code === 'OP0000') {
-      appList.value = res.data?.list || [];
-      appPagination.total = res.data?.total || 0;
-      stats.appTotal = res.data?.total || 0;
-    }
-  } catch (e) {
-    console.error(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function loadLogList() {
-  loading.value = true;
-  try {
-    const res = await opAdminApi.adminGetLogList({
-      page: logPagination.current,
-      pageSize: logPagination.pageSize,
-      appId: logParams.appId || undefined,
-      result: logParams.result || undefined,
-      apiPath: logParams.apiPath || undefined,
-    }) as any;
-    if (res?.code === 'OP0000') {
-      logList.value = res.data?.list || [];
-      logPagination.total = res.data?.total || 0;
-    }
-  } catch (e) {
-    console.error(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function handleDevTableChange(pagination: any) {
-  devPagination.current = pagination.current;
-  devPagination.pageSize = pagination.pageSize;
-  loadDevList();
-}
-
-function handleAppTableChange(pagination: any) {
-  appPagination.current = pagination.current;
-  appPagination.pageSize = pagination.pageSize;
-  loadAppList();
-}
-
-function handleLogTableChange(pagination: any) {
-  logPagination.current = pagination.current;
-  logPagination.pageSize = pagination.pageSize;
-  loadLogList();
-}
-
-function showDevDetail(record: any) {
-  currentDev.value = record;
-  showDevModal.value = true;
-}
-
-function changeLevel(record: any) {
-  currentDev.value = record;
-  levelForm.level = record.level;
-  showLevelModal.value = true;
-}
-
-async function handleLevelChange() {
-  if (!currentDev.value) return;
-  loading.value = true;
-  try {
-    await opAdminApi.adminUpdateDevLevel(currentDev.value.developerId, levelForm.level);
-    message.success('等级调整成功');
-    showLevelModal.value = false;
-    loadDevList();
-  } catch (e: any) {
-    message.error(e.message || '调整失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function reviewDev(record: any, status: 'active' | 'rejected') {
-  try {
-    await opAdminApi.adminReviewDev(record.developerId, { status });
-    message.success(status === 'active' ? '已通过审核' : '已拒绝');
-    loadDevList();
-  } catch (e: any) {
-    message.error(e.message || '操作失败');
-  }
-}
-
-async function reviewApp(record: any, status: 'active' | 'suspended') {
-  try {
-    await opAdminApi.adminReviewApp(record.appId, status);
-    message.success(status === 'active' ? '已通过审核' : '已拒绝');
-    loadAppList();
-  } catch (e: any) {
-    message.error(e.message || '操作失败');
-  }
-}
-
-function showAppDetail(record: any) {
-  message.info(`应用详情: ${record.appName} (${record.appId})`);
-}
-
-function resetDevParams() {
-  devParams.keyword = '';
-  devParams.status = '';
-  devParams.level = '';
-  devPagination.current = 1;
-  loadDevList();
-}
-
-function resetAppParams() {
-  appParams.keyword = '';
-  appParams.status = '';
-  appPagination.current = 1;
-  loadAppList();
-}
-
-function resetLogParams() {
-  logParams.appId = '';
-  logParams.result = '';
-  logParams.apiPath = '';
-  logPagination.current = 1;
-  loadLogList();
-}
+const recentLogs = ref([
+  { id: 1, method: 'POST', apiPath: '/api/v1/pay/gateway', appName: '商户收款APP', success: true, responseTime: 45, createTime: '10:30:25' },
+  { id: 2, method: 'GET', apiPath: '/api/v1/query/order/xxx', appName: '官网支付', success: true, responseTime: 32, createTime: '10:30:20' },
+  { id: 3, method: 'POST', apiPath: '/api/v1/refund/apply', appName: '商户收款APP', success: false, responseTime: 120, createTime: '10:30:15' },
+  { id: 4, method: 'GET', apiPath: '/api/v1/account/balance', appName: '测试应用', success: true, responseTime: 28, createTime: '10:30:10' },
+]);
 
 onMounted(() => {
-  loadStats();
-  loadDevList();
-  loadAppList();
-  loadLogList();
+  initTrendChart();
+  initPieChart();
 });
+
+function initTrendChart() {
+  if (!trendChartRef.value) return;
+  
+  const chart = echarts.init(trendChartRef.value);
+  const option = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['调用量', '成功量', '失败量'] },
+    xAxis: {
+      type: 'category',
+      data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+    },
+    yAxis: { type: 'value' },
+    series: [
+      { name: '调用量', type: 'line', data: [1200, 800, 4500, 12000, 18500, 22000, 15000], smooth: true },
+      { name: '成功量', type: 'line', data: [1180, 790, 4450, 11800, 18200, 21700, 14800], smooth: true },
+      { name: '失败量', type: 'line', data: [20, 10, 50, 200, 300, 300, 200], smooth: true },
+    ],
+  };
+  chart.setOption(option);
+}
+
+function initPieChart() {
+  if (!pieChartRef.value) return;
+  
+  const chart = echarts.init(pieChartRef.value);
+  const option = {
+    tooltip: { trigger: 'item' },
+    legend: { orient: 'vertical', left: 'left' },
+    series: [
+      {
+        name: '应用分布',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false, position: 'center' },
+        emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
+        labelLine: { show: false },
+        data: [
+          { value: 1048, name: '微信支付' },
+          { value: 735, name: '支付宝' },
+          { value: 580, name: '银联' },
+          { value: 484, name: '其他' },
+        ],
+      },
+    ],
+  };
+  chart.setOption(option);
+}
 </script>
 
 <style scoped>
-.open-platform-admin { padding: 16px; background: #f0f2f5; }
+.open-platform-admin {
+  padding: 16px;
+  background: #f0f2f5;
+}
+
+.stats-row {
+  margin-bottom: 16px;
+}
+
+.charts-row {
+  margin-bottom: 16px;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+.bottom-row {
+  margin-bottom: 16px;
+}
+
+.log-info {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
 </style>

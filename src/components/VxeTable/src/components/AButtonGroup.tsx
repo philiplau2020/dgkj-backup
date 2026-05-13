@@ -1,9 +1,8 @@
-import {
-  FormItemContentRenderParams,
-  FormItemRenderOptions,
-  VxeGlobalRendererHandles,
-} from 'vxe-table';
+import { VxeGlobalRendererHandles } from 'vxe-table';
 import { createDefaultRender, createEditRender, createFormItemRender } from './AButton';
+
+type FormItemContentRenderParams = any;
+type FormItemRenderOptions = any;
 
 function createEditButtonRender() {
   return function (

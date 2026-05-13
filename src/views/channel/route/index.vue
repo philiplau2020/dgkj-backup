@@ -224,6 +224,7 @@ import {
   TimePicker, RadioGroup, Radio, InputNumber, message 
 } from 'ant-design-vue';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -311,78 +312,27 @@ function getChannelColor(channel: string) {
   return 'default';
 }
 
-const mockRouteList = [
-  {
-    id: 1,
-    routeName: '小额微信优先',
-    routeCode: 'ROUTE_WX_SMALL',
-    routeType: 'AMOUNT',
-    priority: 10,
-    status: 1,
-    matchCondition: '{"minAmount": 0, "maxAmount": 500}',
-    channels: ['WX_QR_01', 'WX_QR_02'],
-    strategy: 'WEIGHT',
-    remark: '金额0-500元优先走微信',
-    createdAt: '2024-01-15 10:00:00',
-    updatedAt: '2024-01-15 10:00:00',
-  },
-  {
-    id: 2,
-    routeName: '大额中信银行',
-    routeCode: 'ROUTE_CITIC_LARGE',
-    routeType: 'AMOUNT',
-    priority: 20,
-    status: 1,
-    matchCondition: '{"minAmount": 5000, "maxAmount": 0}',
-    channels: ['CITIC_QR_01'],
-    strategy: 'PRIORITY',
-    remark: '金额5000以上走中信银行',
-    createdAt: '2024-01-15 10:00:00',
-    updatedAt: '2024-01-15 10:00:00',
-  },
-  {
-    id: 3,
-    routeName: '通联备用',
-    routeCode: 'ROUTE_CT_BACKUP',
-    routeType: 'CHANNEL',
-    priority: 30,
-    status: 1,
-    matchCondition: '{"channels": ["CT_QR_01"]}',
-    channels: ['CT_QR_01'],
-    strategy: 'ROUND',
-    remark: '通联作为备用通道',
-    createdAt: '2024-01-15 10:00:00',
-    updatedAt: '2024-01-15 10:00:00',
-  },
-  {
-    id: 4,
-    routeName: '夜间禁用规则',
-    routeCode: 'ROUTE_NIGHT_OFF',
-    routeType: 'TIME',
-    priority: 50,
-    status: 0,
-    matchCondition: '{"timeStart": "22:00:00", "timeEnd": "08:00:00"}',
-    channels: ['WX_QR_01', 'ALI_QR_01'],
-    strategy: 'PRIORITY',
-    remark: '夜间禁用部分通道',
-    createdAt: '2024-01-15 10:00:00',
-    updatedAt: '2024-01-15 10:00:00',
-  },
-];
-
 async function fetchData() {
   loading.value = true;
   try {
-    // 模拟数据
-    dataSource.value = mockRouteList;
-    pagination.total = mockRouteList.length;
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.routeName) params.routeName = searchForm.routeName;
+    if (searchForm.routeType) params.routeType = searchForm.routeType;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
     
-    stats.totalCount = mockRouteList.length;
-    stats.activeCount = mockRouteList.filter(item => item.status === 1).length;
-    stats.todayRouteCount = 12856;
-    stats.successRate = 98.56;
-  } catch (error) {
-    console.error('获取数据失败', error);
+    const res = await defHttp.get({ url: '/basic-api/channel/route/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.totalCount = dataSource.value.length;
+      stats.activeCount = dataSource.value.filter(item => item.status === 1).length;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
+    }
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally {
     loading.value = false;
   }
@@ -446,7 +396,9 @@ function openEditModal(record: any) {
 async function handleFormSubmit() {
   submitLoading.value = true;
   try {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const url = formMode.value === 'add' ? '/basic-api/channel/route' : `/basic-api/channel/route/${formData.routeCode}`;
+    const method = formMode.value === 'add' ? 'post' : 'put';
+    await defHttp[method]({ url, data: formData });
     message.success(formMode.value === 'add' ? '新增成功' : '编辑成功');
     formVisible.value = false;
     fetchData();
@@ -459,7 +411,7 @@ async function handleFormSubmit() {
 
 async function handleToggle(record: any) {
   try {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await defHttp.put({ url: `/basic-api/channel/route/${record.routeCode}/toggle` });
     message.success(record.status === 1 ? '停用成功' : '启用成功');
     fetchData();
   } catch (error) {

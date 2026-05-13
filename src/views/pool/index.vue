@@ -331,6 +331,8 @@ import {
   TimePicker, Divider, RadioGroup, RadioButton, Switch, Textarea, message 
 } from 'ant-design-vue';
 import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, ThunderboltOutlined } from '@ant-design/icons-vue';
+import { defHttp } from '@/utils/http/axios';
+import { ApiPath } from '@/api/config';
 
 const loading = ref(false);
 const routeLoading = ref(false);
@@ -449,15 +451,12 @@ function getRuleTypeName(type: string) {
 async function fetchChannelList() {
   loading.value = true;
   try {
-    const params = new URLSearchParams({
-      page: '1',
-      pageSize: '100',
-    });
-    if (channelFilter.value) params.append('channelType', channelFilter.value);
+    const params: any = { page: 1, pageSize: 100 };
+    if (channelFilter.value) params.channelType = channelFilter.value;
     
-    const res = await fetch(`/basic-api/pool/channel/list?${params}`);
-    const data = await res.json();
-    channelList.value = data.result?.list || [];
+    const res = await defHttp.get({ url: ApiPath.ChannelPoolList, params });
+    const data = res?.data || res;
+    channelList.value = data?.list || [];
   } catch (error) {
     console.error('获取通道列表失败', error);
   } finally {
@@ -467,10 +466,17 @@ async function fetchChannelList() {
 
 async function fetchStats() {
   try {
-    const res = await fetch('/basic-api/pool/channel/stats');
-    const data = await res.json();
-    if (data.result) {
-      Object.assign(stats, data.result);
+    const res = await defHttp.get({ url: ApiPath.ChannelPoolStats });
+    const data = res?.data || res;
+    if (data) {
+      Object.assign(stats, {
+        totalChannel: data.totalChannel || 0,
+        activeChannel: data.activeChannel || 0,
+        todayTotalAmount: data.todayAmount || 0,
+        todayTotalCount: data.todayCount || 0,
+        avgSuccessRate: data.successRate || 0,
+        avgResponseTime: data.responseTime || 0,
+      });
       stats.activeRate = stats.totalChannel > 0 ? ((stats.activeChannel / stats.totalChannel) * 100).toFixed(1) : 0;
     }
   } catch (error) {
@@ -480,9 +486,9 @@ async function fetchStats() {
 
 async function fetchRuleList() {
   try {
-    const res = await fetch('/basic-api/pool/rule/list');
-    const data = await res.json();
-    ruleList.value = data.result || [];
+    const res = await defHttp.get({ url: ApiPath.ChannelStrategyList, params: { page: 1, pageSize: 100 } });
+    const data = res?.data || res;
+    ruleList.value = data?.list || [];
   } catch (error) {
     console.error('获取规则列表失败', error);
   }
@@ -491,18 +497,31 @@ async function fetchRuleList() {
 async function handleRouteTest() {
   routeLoading.value = true;
   try {
-    const params = new URLSearchParams({
-      mchNo: testForm.mchNo,
-      amount: testForm.amount.toString(),
-      payChannel: testForm.payChannel || '',
-      mchType: testForm.mchType || '',
+    const payTypeMap: Record<string, string> = {
+      'WX': 'wechat', 'ALI': 'alipay', 'CT': 'ctpay', 'CITIC': 'citic'
+    };
+    const payType = testForm.payChannel ? payTypeMap[testForm.payChannel] || testForm.payChannel.toLowerCase() : '';
+    
+    const res = await defHttp.get({ 
+      url: ApiPath.ChannelRecommend, 
+      params: { payType, amount: testForm.amount || 0 }
     });
-    const res = await fetch(`/basic-api/pool/route?${params}`, { method: 'POST' });
-    const data = await res.json();
-    routeResult.value = data.result;
-  } catch (error) {
+    const data = res?.data || res;
+    
+    if (data?.channelCode) {
+      routeResult.value = {
+        success: true,
+        channelCode: data.channelCode || '',
+        channelName: data.channelName || '',
+        priority: data.priority || 1,
+        remainLimit: data.remainLimit || data.dailyLimit || 0,
+      };
+    } else {
+      routeResult.value = { success: false, rejectReason: data?.message || '未找到可用通道' };
+    }
+  } catch (error: any) {
     console.error('路由测试失败', error);
-    routeResult.value = { success: false, rejectReason: '请求失败' };
+    routeResult.value = { success: false, rejectReason: error?.message || '请求失败' };
   } finally {
     routeLoading.value = false;
   }

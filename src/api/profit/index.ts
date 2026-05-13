@@ -1,20 +1,20 @@
 import { defHttp } from '@/utils/http/axios';
-import { ApiPath } from '../config';
+import { ApiPath, API_BASE } from '../config';
 
-enum Api {
-  AccountGroupList = `${ApiPath.ProfitAccountGroup}`,
-  AccountGroupCreate = ApiPath.ProfitAccountGroup,
-  AccountGroupUpdate = ApiPath.ProfitAccountGroup,
-  ReceiverList = `${ApiPath.ProfitReceiver}`,
-  ReceiverCreate = ApiPath.ProfitReceiver,
-  ReceiverUpdate = ApiPath.ProfitReceiver,
-  RecordList = `${ApiPath.ProfitRecord}`,
-  RecordCreate = `${ApiPath.ProfitRecord}`,
-  RecordSettle = `${ApiPath.ProfitRecord}/settle`,
-  RollbackList = `${ApiPath.ProfitRollback}`,
-  RollbackCreate = ApiPath.ProfitRollback,
-  RollbackComplete = `${ApiPath.ProfitRollback}/complete`,
-}
+const Api = {
+  AccountGroupList: `${ApiPath.ProfitAccountGroup}/list`,
+  AccountGroupCreate: ApiPath.ProfitAccountGroup,
+  AccountGroupUpdate: ApiPath.ProfitAccountGroup,
+  ReceiverList: `${ApiPath.ProfitReceiver}/list`,
+  ReceiverCreate: ApiPath.ProfitReceiver,
+  ReceiverUpdate: ApiPath.ProfitReceiver,
+  RecordList: ApiPath.ProfitRecordList,
+  RecordCreate: ApiPath.ProfitRecordList,
+  RecordSettle: `${API_BASE}/profit/record/settle`,
+  RollbackList: ApiPath.ProfitRollbackList,
+  RollbackCreate: ApiPath.ProfitRollback,
+  RollbackComplete: `${API_BASE}/profit/rollback/complete`,
+} as const;
 
 export interface AccountGroupItem {
   id: string;

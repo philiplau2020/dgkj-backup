@@ -60,6 +60,12 @@ const sys: AppRouteModule = {
       component: () => import('@/views/sys/log/index.vue'),
       meta: { title: '系统日志' },
     },
+    {
+      path: 'notify',
+      name: 'SystemNotify',
+      component: () => import('@/views/sys/notify/index.vue'),
+      meta: { title: '通知管理' },
+    },
   ],
 };
 

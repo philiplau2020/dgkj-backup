@@ -94,6 +94,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { Card, Form, FormItem, Input, RangePicker, Button, Space, Row, Col, Statistic, Table } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import * as echarts from 'echarts';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const tableData = ref<any[]>([]);
@@ -145,27 +146,35 @@ function calcSuccessRate(record: any) {
 async function fetchData() {
   loading.value = true;
   try {
-    const params = new URLSearchParams();
-    params.append('page', pagination.current.toString());
-    params.append('pageSize', pagination.pageSize.toString());
-    if (searchForm.mchName) params.append('mchName', searchForm.mchName);
+    const params: any = {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    };
+    if (searchForm.mchName) params.mchName = searchForm.mchName;
 
-    const res = await fetch(`/basic-api/stat/merchant?${params}`);
-    const data = await res.json();
+    const res = await defHttp.get({ url: '/basic-api/stat/merchant/list', params });
 
-    if (data.result) {
-      tableData.value = data.result.list || [];
-      pagination.total = data.result.total || 0;
+    if (res && res.data) {
+      tableData.value = res.data;
+      pagination.total = res.total || res.data.length;
 
-      stats.totalCount = data.result.total || 0;
-      stats.activeCount = Math.floor(tableData.value.length * 0.8);
+      stats.totalCount = res.total || res.data.length;
+      stats.activeCount = Math.floor(res.data.length * 0.8);
       stats.todayNew = Math.floor(Math.random() * 10) + 1;
       stats.pendingAudit = Math.floor(Math.random() * 5);
 
-      updateCharts(tableData.value);
+      updateCharts(res.data);
+    } else if (Array.isArray(res)) {
+      tableData.value = res;
+      pagination.total = res.length;
+      stats.totalCount = res.length;
+      stats.activeCount = Math.floor(res.length * 0.8);
+      updateCharts(res);
     }
   } catch (error) {
     console.error('获取数据失败', error);
+    tableData.value = [];
+    pagination.total = 0;
   } finally {
     loading.value = false;
   }

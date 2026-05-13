@@ -76,6 +76,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, RangePicker, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -102,20 +103,21 @@ function getStatusColor(status: number) { return { 0: 'default', 1: 'success', 2
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 20; i++) {
-      const status = [0, 1, 2][Math.floor(Math.random() * 3)];
-      mockData.push({
-        id: i, orderId: 'ORD' + i, mchOrderNo: 'M' + Date.now().toString().slice(0, 8) + i,
-        orderTypeName: ['支付订单', '退款订单'][i % 2], notifyStatus: status,
-        notifyStatusName: ['待通知', '通知成功', '通知失败'][status],
-        notifyCount: Math.floor(Math.random() * 5),
-        lastNotifyTime: status > 0 ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null,
-        createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.mchOrderNo) params.mchOrderNo = searchForm.mchOrderNo;
+    if (searchForm.notifyStatus !== undefined) params.notifyStatus = searchForm.notifyStatus;
+    
+    const res = await defHttp.get({ url: '/basic-api/trade/notify/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData;
-    pagination.total = mockData.length;
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

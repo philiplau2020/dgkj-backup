@@ -9,6 +9,34 @@ enum Api {
   ResetPassword = '/basic-api/sys/user/password',
 }
 
+export interface RoleInfo {
+  roleName?: string;
+  value: string;
+}
+
+// Re-export RoleEnum for backward compatibility
+export { RoleEnum } from '@/enums/roleEnum';
+
+export interface LoginParams {
+  username: string;
+  password: string;
+}
+
+export interface GetUserInfoModel {
+  userInfo: {
+    id: string;
+    username: string;
+    nickname: string;
+    avatar?: string;
+    email?: string;
+    mobile?: string;
+    userType: number;
+  };
+  roles: string[];
+  permissions: string[];
+  menuList: any[];
+}
+
 export interface UserItem {
   id: string;
   username: string;

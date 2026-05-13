@@ -284,8 +284,10 @@ async function fetchData() {
   loading.value = true;
   try {
     const res = await getServiceList({ page: pagination.current, pageSize: pagination.pageSize, keyword: keyword.value });
-    dataSource.value = res?.list || [];
-    pagination.total = res?.total || 0;
+    // Handle unified API response format
+    const data = res?.data || res;
+    dataSource.value = data?.list || res?.list || [];
+    pagination.total = data?.total || res?.total || 0;
   } catch (e) { console.error(e); }
   finally { loading.value = false; }
 }

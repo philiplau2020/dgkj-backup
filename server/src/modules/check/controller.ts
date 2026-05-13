@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AppDataSource } from '../../config/data-source';
-import { CheckBatch, CheckChannelBill, CheckDiffBill } from '../../database/entities/check.entity';
+import { CheckBatch, CheckChannelBill, CheckDiffBill, CheckBatchStatus } from '../../database/entities/check.entity';
 
 export class CheckController {
   private batchRepo = AppDataSource.getRepository(CheckBatch);
@@ -29,16 +29,22 @@ export class CheckController {
 
   async createBatch(req: Request, res: Response, next: NextFunction) {
     try {
-      const { checkDate, checkType, channelCode } = req.body;
+      const { checkDate, channelCode } = req.body;
 
       const batchNo = 'CB' + Date.now();
       const batch = this.batchRepo.create({
         id: uuidv4(),
         batchNo,
         checkDate,
-        checkType,
-        channelCode,
-        status: 0,
+        channelCode: channelCode || '',
+        channelName: channelCode || '全部通道',
+        platformOrderCount: 0,
+        platformTotalAmount: 0,
+        channelOrderCount: 0,
+        channelTotalAmount: 0,
+        diffOrderCount: 0,
+        diffAmount: 0,
+        status: CheckBatchStatus.PROCESSING,
         createTime: new Date(),
         updateTime: new Date(),
       });
@@ -58,7 +64,7 @@ export class CheckController {
       await this.batchRepo.update(id, {
         status,
         remark,
-        completeTime: status === 1 ? new Date() : null,
+        completeTime: status === CheckBatchStatus.SUCCESS ? new Date() : undefined,
         updateTime: new Date(),
       });
 
@@ -88,22 +94,17 @@ export class CheckController {
 
   async createChannelBill(req: Request, res: Response, next: NextFunction) {
     try {
-      const { batchNo, channelCode, channelOrderNo, mchNo, orderNo, payType, amount, fee, status, tradeTime } = req.body;
+      const { batchNo, channelCode, channelOrderNo, orderNo, amount, fee, status } = req.body;
 
-      const billNo = 'BB' + Date.now();
       const bill = this.channelBillRepo.create({
         id: uuidv4(),
-        billNo,
         batchNo,
         channelCode,
         channelOrderNo,
-        mchNo,
         orderNo,
-        payType,
         amount,
         fee,
-        status,
-        tradeTime,
+        status: status || 'PENDING',
         createTime: new Date(),
       });
 
@@ -123,7 +124,7 @@ export class CheckController {
       const queryBuilder = this.diffBillRepo.createQueryBuilder('diff');
       if (batchNo) queryBuilder.andWhere('diff.batchNo = :batchNo', { batchNo });
       if (diffType !== undefined) queryBuilder.andWhere('diff.diffType = :diffType', { diffType });
-      if (status !== undefined) queryBuilder.andWhere('diff.status = :status', { status });
+      if (status !== undefined) queryBuilder.andWhere('diff.handleStatus = :status', { status });
 
       const [list, total] = await queryBuilder.skip(skip).take(Number(pageSize)).orderBy('diff.createTime', 'DESC').getManyAndCount();
       res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
@@ -135,13 +136,12 @@ export class CheckController {
   async handleDiffBill(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { status, handleRemark } = req.body;
+      const { handleStatus, handleRemark } = req.body;
 
       await this.diffBillRepo.update(id, {
-        status,
+        handleStatus,
         handleRemark,
         handleTime: new Date(),
-        handleUserId: req.user?.userId,
         updateTime: new Date(),
       });
 

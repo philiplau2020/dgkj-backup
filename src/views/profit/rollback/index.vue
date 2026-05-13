@@ -60,6 +60,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Modal, Descriptions, DescriptionsItem } from 'ant-design-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -83,27 +84,25 @@ const columns = [
 const currentRecord = ref<any>(null);
 const detailVisible = ref(false);
 
-function getStatusColor(status: number) { return { 0: 'default', 1: 'processing', 2: 'success', 3: 'error' }[status] || 'default'; }
-
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 20; i++) {
-      const status = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-      const rollbackAmount = (Math.random() * 500 + 10).toFixed(2);
-      const profitRate = 0.10;
-      mockData.push({
-        id: i, rollbackNo: 'RB' + Date.now().toString().slice(0, 10) + i,
-        profitNo: 'PF' + Date.now().toString().slice(0, 10) + i, refundNo: 'REF' + Date.now().toString().slice(0, 10) + i,
-        orderNo: 'P' + Date.now().toString().slice(0, 10) + i, mchNo: i % 2 === 0 ? 'M10001' : 'M10002',
-        rollbackAmount, profitAmount: (Number(rollbackAmount) / profitRate).toFixed(2), profitRate: profitRate.toFixed(2),
-        receiverAccount: 'wx_123456' + i, receiverName: ['张三', '李四', '王五'][i % 3],
-        status, statusName: ['待处理', '回退中', '已回退', '回退失败'][status],
-        createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.rollbackNo) params.rollbackNo = searchForm.rollbackNo;
+    if (searchForm.profitNo) params.profitNo = searchForm.profitNo;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    
+    const res = await defHttp.get({ url: '/basic-api/profit/rollback/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

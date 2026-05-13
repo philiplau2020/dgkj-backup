@@ -1,13 +1,13 @@
 import { ComponentOptions, h } from 'vue';
-import {
-  FormItemContentRenderParams,
-  FormItemRenderOptions,
-  VxeGlobalRendererHandles,
-} from 'vxe-table';
+import { VxeGlobalRendererHandles } from 'vxe-table';
 import XEUtils from 'xe-utils';
 import { componentMap } from '../componentMap';
 import { ComponentType } from '../componentType';
 import { createPlaceholderMessage } from '../helper';
+
+type FormItemContentRenderParams = any;
+type FormItemRenderOptions = any;
+type VxeGlobalRendererHandles = any;
 
 /**
  * @description: 获取组件
@@ -343,14 +343,11 @@ export function createFormItemRender(
  */
 export function createCellRender(
   getSelectCellValue: Function,
-  callBack?: (
-    renderOpts: VxeGlobalRendererHandles.RenderCellOptions,
-    params: VxeGlobalRendererHandles.RenderCellParams,
-  ) => Array<any>,
+  callBack?: Function,
 ) {
   return function (
-    renderOpts: VxeGlobalRendererHandles.RenderCellOptions,
-    params: VxeGlobalRendererHandles.RenderCellParams,
+    renderOpts: any,
+    params: any,
   ) {
     const args = (callBack && callBack(renderOpts, params)) ?? [];
     const cellLabel = getSelectCellValue && getSelectCellValue(renderOpts, params, ...args);

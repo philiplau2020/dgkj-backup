@@ -1,23 +1,25 @@
 import { defHttp } from '@/utils/http/axios';
 import { ApiPath } from '../config';
 
-enum Api {
-  ChannelList = ApiPath.ChannelList,
-  ChannelGet = ApiPath.Channel,
-  ChannelCreate = ApiPath.Channel,
-  ChannelUpdate = ApiPath.Channel,
-  ChannelMchList = ApiPath.ChannelMchList,
-  ChannelMchCreate = ApiPath.ChannelMch,
-  RouteList = ApiPath.ChannelRouteList,
-  RouteCreate = ApiPath.ChannelRoute,
-  RouteUpdate = ApiPath.ChannelRoute,
-  PoolList = ApiPath.ChannelPoolList,
-  PoolCreate = ApiPath.ChannelPool,
-  StrategyList = ApiPath.ChannelStrategyList,
-  StrategyCreate = ApiPath.ChannelStrategy,
-  StrategyUpdate = ApiPath.ChannelStrategy,
-  Recommend = ApiPath.ChannelRecommend,
-}
+const Api = {
+  ChannelList: ApiPath.ChannelList,
+  ChannelGet: ApiPath.Channel,
+  ChannelCreate: ApiPath.Channel,
+  ChannelUpdate: ApiPath.Channel,
+  ChannelMchList: ApiPath.ChannelMchList,
+  ChannelMchCreate: ApiPath.ChannelMch,
+  RouteList: ApiPath.ChannelRouteList,
+  RouteCreate: ApiPath.ChannelRoute,
+  RouteUpdate: ApiPath.ChannelRoute,
+  PoolList: ApiPath.ChannelPoolList,
+  PoolCreate: ApiPath.ChannelPool,
+  StrategyList: ApiPath.ChannelStrategyList,
+  StrategyCreate: ApiPath.ChannelStrategy,
+  StrategyUpdate: ApiPath.ChannelStrategy,
+  Recommend: ApiPath.ChannelRecommend,
+} as const;
+
+type Api = typeof Api;
 
 export interface ChannelItem {
   id: string;

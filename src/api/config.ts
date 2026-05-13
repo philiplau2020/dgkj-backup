@@ -17,7 +17,7 @@
  * - /basic-api/trade/*         - 交易管理
  * - /basic-api/finance/*       - 财务管理
  * - /basic-api/channel/*       - 通道管理
- * - /basic-api/citic/*         - 兴业管理
+ * - /basic-api/citic/*         - 中信银行E管家
  * - /basic-api/statistics/*     - 统计管理
  * - /basic-api/device/*        - 设备管理
  * - /basic-api/check/*         - 对账管理
@@ -71,19 +71,19 @@ export const ApiPath = {
   AgentWithdraw: `${API_BASE}/agent/withdraw`,
   AgentWithdrawReview: `${API_BASE}/agent/withdraw/review`,
 
-  // 交易管理 (注意: Mock 使用 order 前缀而非 trade/order)
+  // 交易管理
   TradeOrderList: `${API_BASE}/order/list`,
   TradeOrder: `${API_BASE}/order`,
-  TradeOrderInfo: `${API_BASE}/order/info`,
+  TradeOrderInfo: `${API_BASE}/order/:id`,
   TradeOrderStats: `${API_BASE}/order/stats`,
-  TradeOrderClose: `${API_BASE}/order/close`,
+  TradeOrderClose: `${API_BASE}/order/:id/close`,
   TradeRefundList: `${API_BASE}/refund/list`,
   TradeRefund: `${API_BASE}/refund`,
-  TradeRefundApply: `${API_BASE}/refund/apply`,
-  TradeTransferList: `${API_BASE}/trade/transfer/list`,
-  TradeTransfer: `${API_BASE}/trade/transfer`,
-  TradeNotifyList: `${API_BASE}/trade/notify/list`,
-  TradeNotifyResend: `${API_BASE}/trade/notify/resend`,
+  TradeRefundApply: `${API_BASE}/refund`,
+  TradeTransferList: `${API_BASE}/transfer/list`,
+  TradeTransfer: `${API_BASE}/transfer`,
+  TradeNotifyList: `${API_BASE}/notify/list`,
+  TradeNotifyResend: `${API_BASE}/notify/:id/resend`,
 
   // 财务管理 (注意: Mock 使用 account 前缀)
   FinanceAccountList: `${API_BASE}/account/list`,
@@ -116,7 +116,7 @@ export const ApiPath = {
   ChannelPoolDelete: `${API_BASE}/pool/channel/delete`,
   ChannelPoolToggle: `${API_BASE}/pool/channel/toggle`,
 
-  // 兴业管理
+  // 中信银行E管家
   CiticAccountList: `${API_BASE}/citic/account/list`,
   CiticAccount: `${API_BASE}/citic/account`,
   CiticCardList: `${API_BASE}/citic/card/list`,
@@ -127,20 +127,21 @@ export const ApiPath = {
   CiticCheckList: `${API_BASE}/citic/check/list`,
   CiticCheck: `${API_BASE}/citic/check`,
 
-  // 统计管理 (注意: Mock 使用 stat 前缀)
-  StatisticsDashboard: `${API_BASE}/stat/trade/today`,
-  StatisticsTradeList: `${API_BASE}/stat/trade/trend`,
+  // 统计管理 (注意: Mock 使用 stat 前缀，backend 有 /list 后缀)
+  StatisticsDashboard: `${API_BASE}/stat/dashboard`,
+  StatisticsTradeList: `${API_BASE}/stat/trade/list`,
   StatisticsTradeTrend: `${API_BASE}/stat/trade/trend`,
-  StatisticsTradePayType: `${API_BASE}/stat/channel`,
-  StatisticsMerchantList: `${API_BASE}/stat/merchant`,
-  StatisticsAgentList: `${API_BASE}/agent/list`,
-  StatisticsChannelList: `${API_BASE}/stat/channel`,
-  StatisticsFinanceList: `${API_BASE}/stat/finance`,
+  StatisticsTradePayType: `${API_BASE}/stat/trade/pay-type`,
+  StatisticsMerchantList: `${API_BASE}/stat/merchant/list`,
+  StatisticsAgentList: `${API_BASE}/stat/agent/list`,
+  StatisticsChannelList: `${API_BASE}/stat/channel/list`,
+  StatisticsFinanceList: `${API_BASE}/stat/finance/list`,
 
-  // 设备管理
+  // 设备管理 (注意: backend 使用 /code/list 和 /qrcode/list 等)
   DeviceList: `${API_BASE}/device/list`,
   Device: `${API_BASE}/device`,
-  DeviceBind: `${API_BASE}/device/bind`,
+  DeviceInfo: `${API_BASE}/device/:id`,
+  DeviceBind: `${API_BASE}/device/:id/bind`,
   DeviceCodeList: `${API_BASE}/device/code/list`,
   DeviceCode: `${API_BASE}/device/code`,
   DeviceQrcodeList: `${API_BASE}/device/qrcode/list`,
@@ -165,6 +166,6 @@ export const ApiPath = {
   ProfitRecordList: `${API_BASE}/profit/record/list`,
   ProfitRollbackList: `${API_BASE}/profit/rollback/list`,
   ProfitRollback: `${API_BASE}/profit/rollback`,
-} as const;
+};
 
 export default ApiPath;

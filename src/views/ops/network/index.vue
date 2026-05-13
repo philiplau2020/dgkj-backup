@@ -192,11 +192,14 @@ async function fetchData() {
   loading.value = true;
   try {
     const res = await getNetworkList({ page: pagination.current, pageSize: pagination.pageSize });
-    dataSource.value = res?.list || [];
-    pagination.total = res?.total || 0;
+    // Handle unified API response format
+    const data = res?.data || res;
+    dataSource.value = data?.list || res?.list || [];
+    pagination.total = data?.total || res?.total || 0;
 
     const srvRes = await getServerList({ page: 1, pageSize: 100 });
-    servers.value = srvRes?.list || [];
+    const srvData = srvRes?.data || srvRes;
+    servers.value = srvData?.list || srvRes?.list || [];
   } catch (e) { console.error(e); }
   finally { loading.value = false; }
 }

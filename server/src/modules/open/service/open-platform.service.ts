@@ -2,8 +2,8 @@
  * 开放平台核心服务
  */
 import { Repository } from 'typeorm';
-import { AppDataSource } from '../../config/data-source';
-import { OpDeveloper, OpApp, OpApiKey, OpApiLog, OpApiQuota } from './entity';
+import { AppDataSource } from '../../../config/data-source';
+import { OpDeveloper, OpApp, OpApiKey, OpApiQuota, AppStatus } from '../entity';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import {
@@ -18,8 +18,8 @@ import {
   maskSecret,
   maskPhone,
   maskEmail,
-} from '../../utils/signature';
-import { OpCode, opResult } from '../../utils/op-code';
+} from '../../../utils/signature';
+import { OpCode, opResult } from '../../../utils/op-code';
 
 /** 开发者等级配额 */
 const LEVEL_QUOTAS = {
@@ -190,13 +190,13 @@ export class DeveloperService {
       reviewBy,
       reviewRemark: remark,
     });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 更新开发者等级 */
   async updateLevel(developerId: string, level: 'trial' | 'basic' | 'professional' | 'enterprise') {
     await this.repo.update({ developerId }, { level });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   private generateToken(developer: OpDeveloper): string {
@@ -272,7 +272,8 @@ export class AppService {
       appKey,
       appSecret: encryptedSecret,
       mchNo,
-      status: 'pending',
+      status: AppStatus.PENDING,
+      appType: params.appType as any,
       enabledApis: params.enabledPayTypes ? defaultApis : defaultApis,
       enabledPayTypes: params.enabledPayTypes || defaultPayTypes,
     });
@@ -365,7 +366,7 @@ export class AppService {
     }
 
     await this.repo.update({ appId }, updateData);
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 重置 AppSecret */
@@ -394,13 +395,14 @@ export class AppService {
       ipWhitelist: JSON.stringify(ips),
       ipWhitelistCount: ips.length,
     });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 审核应用 */
   async review(appId: string, status: 'active' | 'suspended', reviewBy?: string) {
-    await this.repo.update({ appId }, { status });
-    return opResult(OpCode.SUCCESS);
+    const appStatus = status === 'active' ? AppStatus.ACTIVE : AppStatus.SUSPENDED;
+    await this.repo.update({ appId }, { status: appStatus });
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 获取应用配置信息 (供前端调试使用) */
@@ -506,19 +508,19 @@ export class ApiKeyService {
   /** 禁用 Key */
   async disableKey(keyId: string, developerId: string) {
     await this.repo.update({ keyId, developerId }, { status: 'disabled' });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 启用 Key */
   async enableKey(keyId: string, developerId: string) {
     await this.repo.update({ keyId, developerId }, { status: 'active' });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 
   /** 删除 Key */
   async deleteKey(keyId: string, developerId: string) {
     await this.repo.delete({ keyId, developerId });
-    return opResult(OpCode.SUCCESS);
+    return opResult(OpCode.SUCCESS, null);
   }
 }
 

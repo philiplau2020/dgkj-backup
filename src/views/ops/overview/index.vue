@@ -270,22 +270,61 @@ async function fetchData() {
       getAlertList({ page: 1, pageSize: 5, status: 'active' }).catch(() => ({ list: [] })),
     ]);
 
-    if (overviewRes) {
-      Object.assign(overviewData.servers, overviewRes.servers || {});
-      Object.assign(overviewData.services, overviewRes.services || {});
-      Object.assign(overviewData.apps, overviewRes.apps || {});
-      Object.assign(overviewData.business, overviewRes.business || {});
-      Object.assign(overviewData.alerts, overviewRes.alerts || {});
-      Object.assign(overviewData.logs, overviewRes.logs || {});
-      if (overviewRes.trend) overviewData.trend = overviewRes.trend;
+    // Handle unified API response format
+    const overview = overviewRes?.data || overviewRes;
+    const health = healthRes?.data || healthRes;
+    const alerts = alertRes?.data || alertRes;
+
+    if (overview) {
+      Object.assign(overviewData.servers, {
+        total: overview.serverCount || 1,
+        online: overview.serverOnline || 1,
+        offline: (overview.serverCount || 1) - (overview.serverOnline || 1),
+        avgCpu: overview.cpuUsage || 0,
+        avgMemory: overview.memUsage || 0,
+        avgDisk: overview.diskUsage || 0,
+      });
+      Object.assign(overviewData.services, {
+        total: overview.serviceCount || 0,
+        running: overview.serviceRunning || 0,
+        stopped: 0,
+        restarting: 0,
+        avgResponseTime: 0,
+        totalRequests: 0,
+        totalErrors: 0,
+      });
+      Object.assign(overviewData.business, {
+        orderCount: 0,
+        orderAmount: 0,
+        successRate: 0,
+        avgResponseTime: 0,
+        activeUsers: 0,
+        activeConnections: 0,
+      });
+      Object.assign(overviewData.alerts, {
+        total: overview.alertCount || 0,
+        critical: 0,
+        error: 0,
+        warning: 0,
+        info: overview.alertCount || 0,
+        pending: overview.alertCount || 0,
+      });
+      Object.assign(overviewData.logs, {
+        todayTotal: 0,
+        errorCount: 0,
+        warnCount: 0,
+        avgPerMinute: 0,
+      });
     }
 
-    if (healthRes?.details) {
-      serviceHealth.value = healthRes.details;
+    if (health?.services) {
+      serviceHealth.value = health.services;
+    } else if (health) {
+      serviceHealth.value = [health];
     }
 
-    if (alertRes?.list) {
-      activeAlerts.value = alertRes.list;
+    if (alerts?.list) {
+      activeAlerts.value = alerts.list;
     }
 
     initCharts();

@@ -235,12 +235,7 @@ import {
   InputNumber, RadioGroup, Radio, message, Alert, Divider
 } from 'ant-design-vue';
 import { PlusOutlined, SearchOutlined, ReloadOutlined, BankOutlined } from '@ant-design/icons-vue';
-import {
-  getCiticTransferList,
-  createCiticTransfer,
-  queryCiticTransfer,
-  getCiticAccountList,
-} from '@/api/citic';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -337,7 +332,7 @@ function handleCardNoInput(e: any) {
 }
 
 function calculateFee() {
-  return Number(payForm.amount) * 0.002; // 假设代付手续费0.2%
+  return Number(payForm.amount) * 0.002;
 }
 
 async function fetchData() {
@@ -353,10 +348,10 @@ async function fetchData() {
     if (searchForm.transferType !== undefined) params.transferType = searchForm.transferType;
     if (searchForm.status !== undefined) params.status = searchForm.status;
 
-    const res = await getCiticTransferList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/citic/transfer/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
       updateStats();
     }
   } catch (error) {
@@ -368,9 +363,9 @@ async function fetchData() {
 
 async function fetchAccountList() {
   try {
-    const res = await getCiticAccountList({ page: 1, pageSize: 100 });
-    if (res.result) {
-      accountList.value = res.result.list || [];
+    const res = await defHttp.get({ url: '/basic-api/citic/account/list', params: { page: 1, pageSize: 100 } });
+    if (res && res.list) {
+      accountList.value = res.list || [];
     }
   } catch (error) {
     console.error('获取账户列表失败', error);
@@ -433,21 +428,15 @@ async function handlePay() {
   }
   submitLoading.value = true;
   try {
-    await createCiticTransfer({
+    await defHttp.post({ url: '/basic-api/citic/transfer', data: {
       accountNo: payForm.accountNo,
-      accountName: payForm.accountName,
       receiverCardNo: payForm.receiverCardNo,
       receiverBankName: payForm.receiverBankName,
-      receiverBankCode: payForm.receiverBankCode,
-      receiverBranchName: payForm.receiverBranchName,
-      receiverBranchCode: payForm.receiverBranchCode,
       receiverName: payForm.receiverName,
-      receiverPhone: payForm.receiverPhone,
       amount: payForm.amount,
-      fee: calculateFee(),
       transferType: payForm.transferType,
       remark: payForm.remark,
-    });
+    }});
     message.success('代付申请已提交');
     payVisible.value = false;
     fetchData();
@@ -465,10 +454,10 @@ function openDetailModal(record: any) {
 
 async function handleQuery(record: any) {
   try {
-    const res = await queryCiticTransfer({ transferNo: record.transferNo });
-    if (res.result) {
-      currentRecord.value = res.result;
-      message.success(`当前状态: ${res.result.statusName}`);
+    const res = await defHttp.get({ url: '/basic-api/citic/transfer/query', params: { transferNo: record.transferNo } });
+    if (res) {
+      currentRecord.value = res;
+      message.success(`当前状态: ${res.statusName}`);
     }
   } catch (error) {
     message.error('查询失败');

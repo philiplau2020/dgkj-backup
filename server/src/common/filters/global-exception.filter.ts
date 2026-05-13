@@ -48,32 +48,43 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error('Error:', err);
+  console.error('Error:', err.message);
 
   if (err instanceof ApiException) {
-    return res.status(err.code).json({
+    const response = {
       code: err.code,
       message: err.message,
       data: err.data,
       timestamp: new Date().toISOString(),
-    });
+    };
+    res.status(err.code);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(response));
+    return;
   }
 
   // Validation errors
   if (err.name === 'ValidationError') {
-    return res.status(400).json({
+    const response = {
       code: 400,
       message: err.message,
       data: null,
       timestamp: new Date().toISOString(),
-    });
+    };
+    res.status(400);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(response));
+    return;
   }
 
   // Default error
-  return res.status(500).json({
+  const response = {
     code: 500,
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
     data: null,
     timestamp: new Date().toISOString(),
-  });
+  };
+  res.status(500);
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(response));
 }

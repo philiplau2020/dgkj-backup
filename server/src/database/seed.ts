@@ -32,22 +32,51 @@ async function seed() {
       console.log('Admin user created: admin / admin123');
     }
 
-    // Create default role
+    // Create default roles
     const roleRepo = AppDataSource.getRepository('SysRole');
-    const existingRole = await roleRepo.findOne({ where: { roleCode: 'admin' } });
+    const existingAdminRole = await roleRepo.findOne({ where: { roleCode: 'super_admin' } });
+    let adminRoleId = existingAdminRole?.id;
 
-    if (!existingRole) {
-      await roleRepo.save({
+    if (!existingAdminRole) {
+      const saved = await roleRepo.save({
         id: uuidv4(),
-        roleName: 'Administrator',
-        roleCode: 'admin',
-        roleDesc: 'System Administrator',
+        roleName: '超级管理员',
+        roleCode: 'super_admin',
+        roleDesc: '拥有系统所有权限',
         status: 1,
         sort: 1,
         createTime: new Date(),
         updateTime: new Date(),
       });
-      console.log('Default role created');
+      adminRoleId = saved.id;
+      console.log('Super admin role created');
+    }
+
+    // Create operator role
+    const existingOperatorRole = await roleRepo.findOne({ where: { roleCode: 'operator_admin' } });
+    if (!existingOperatorRole) {
+      await roleRepo.save({
+        id: uuidv4(),
+        roleName: '运营管理员',
+        roleCode: 'operator_admin',
+        roleDesc: '运营管理权限',
+        status: 1,
+        sort: 2,
+        createTime: new Date(),
+        updateTime: new Date(),
+      });
+      console.log('Operator role created');
+    }
+
+    // Assign admin role to admin user
+    const userRoleRepo = AppDataSource.getRepository('SysUserRole');
+    const existingUserRole = await userRoleRepo.findOne({ where: { userId: existingAdmin?.id } });
+    if (!existingUserRole && existingAdmin && adminRoleId) {
+      await userRoleRepo.save({
+        userId: existingAdmin.id,
+        roleId: adminRoleId,
+      });
+      console.log('Admin user assigned to super_admin role');
     }
 
     // Create default menus
@@ -92,6 +121,15 @@ async function seed() {
         { id: statisticsId, parentId: '0', menuName: 'Statistics', menuCode: 'statistics', path: '/statistics', redirect: '/statistics/trade', menuType: 0, status: 1, sort: 45 },
         { id: channelId, parentId: '0', menuName: 'Channel', menuCode: 'channel', path: '/channel', redirect: '/channel/config', menuType: 0, status: 1, sort: 60 },
         { id: citicId, parentId: '0', menuName: 'Citic', menuCode: 'citic', path: '/citic', redirect: '/citic/account', menuType: 0, status: 1, sort: 95 },
+        // 中信银行E管家子菜单
+        { id: uuidv4(), parentId: citicId, menuName: 'Account Management', menuCode: 'citic:account', path: '/citic/account', component: '/citic/account/index', menuType: 1, perms: 'citic:account:list', status: 1, sort: 1 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Bank Card', menuCode: 'citic:card', path: '/citic/card', component: '/citic/card/index', menuType: 1, perms: 'citic:card:list', status: 1, sort: 2 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Fund Collection', menuCode: 'citic:collection', path: '/citic/collection', component: '/citic/collection/index', menuType: 1, perms: 'citic:collection:list', status: 1, sort: 3 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Profit Share', menuCode: 'citic:profit-share', path: '/citic/profit-share', component: '/citic/profit-share/index', menuType: 1, perms: 'citic:profit-share:list', status: 1, sort: 4 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Transfer', menuCode: 'citic:transfer', path: '/citic/transfer', component: '/citic/transfer/index', menuType: 1, perms: 'citic:transfer:list', status: 1, sort: 5 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Settlement', menuCode: 'citic:settle', path: '/citic/settle', component: '/citic/settle/index', menuType: 1, perms: 'citic:settlement:list', status: 1, sort: 6 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Reconciliation', menuCode: 'citic:check', path: '/citic/check', component: '/citic/check/index', menuType: 1, perms: 'citic:check:list', status: 1, sort: 7 },
+        { id: uuidv4(), parentId: citicId, menuName: 'Bank Config', menuCode: 'citic:config', path: '/citic/config', component: '/citic/config/index', menuType: 1, perms: 'citic:config:list', status: 1, sort: 8 },
         { id: deviceId, parentId: '0', menuName: 'Device', menuCode: 'device', path: '/device', redirect: '/device/code', menuType: 0, status: 1, sort: 65 },
         { id: profitId, parentId: '0', menuName: 'Profit', menuCode: 'profit', path: '/profit', redirect: '/profit/account-group', menuType: 0, status: 1, sort: 55 },
       ];

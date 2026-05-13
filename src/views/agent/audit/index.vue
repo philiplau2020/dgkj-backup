@@ -128,7 +128,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Button, Space, Tag, Row, Col, Statistic, RadioGroup, Radio, Textarea, Modal } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
-import { getAgentAuditList, auditAgent } from '@/api/agent';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -187,11 +187,11 @@ async function fetchData() {
     if (searchForm.agentNo) params.agentNo = searchForm.agentNo;
     if (searchForm.agentName) params.agentName = searchForm.agentName;
 
-    const res = await getAgentAuditList(params);
-    if (res.result) {
-      dataSource.value = res.result.list || [];
-      pagination.total = res.result.total || 0;
-      stats.pendingCount = res.result.total || 0;
+    const res = await defHttp.get({ url: '/basic-api/agent/audit/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+      stats.pendingCount = res.total || 0;
     }
   } catch (error) {
     console.error('获取数据失败', error);
@@ -226,11 +226,11 @@ function openAuditModal(record: any) {
 
 async function handleAuditSubmit() {
   try {
-    await auditAgent({
+    await defHttp.post({ url: '/basic-api/agent/audit', data: {
       agentNo: currentRecord.value?.agentNo,
       status: auditForm.status,
       remark: auditForm.remark,
-    });
+    }});
     message.success('审核成功');
     auditVisible.value = false;
     fetchData();

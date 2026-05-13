@@ -323,18 +323,23 @@ async function fetchData() {
     if (searchForm.channelType) params.append('channelType', searchForm.channelType);
     if (searchForm.status !== undefined) params.append('status', searchForm.status.toString());
 
-    const res = await fetch(`/basic-api/pool/channel/list?${params}`);
+    const res = await fetch(`/basic-api/channel/channel/list?${params}`);
     const data = await res.json();
     if (data.result) {
       dataSource.value = data.result.list || [];
       pagination.total = data.result.total || 0;
+    } else if (data.data) {
+      dataSource.value = data.data.list || [];
+      pagination.total = data.data.total || 0;
     }
 
     // 获取统计数据
-    const statsRes = await fetch('/basic-api/pool/channel/stats');
+    const statsRes = await fetch('/basic-api/channel/channel/stats');
     const statsData = await statsRes.json();
     if (statsData.result) {
       Object.assign(stats, statsData.result);
+    } else if (statsData.data) {
+      Object.assign(stats, statsData.data);
     }
   } catch (error) {
     console.error('获取数据失败', error);

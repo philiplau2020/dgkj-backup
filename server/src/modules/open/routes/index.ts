@@ -3,18 +3,18 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { apiGateway } from './middleware/api-gateway';
+import { apiGateway } from '../middleware/api-gateway';
 import {
   developerService,
   appService,
   apiKeyService,
   quotaService,
-} from './service/open-platform.service';
-import { OpCode, opResult } from '../../utils/op-code';
-import { signHmacSha256 } from '../../utils/signature';
+} from '../service/open-platform.service';
+import { OpCode, opResult } from '../../../utils/op-code';
+import { signHmacSha256 } from '../../../utils/signature';
 import { v4 as uuidv4 } from 'uuid';
-import { AppDataSource } from '../../config/data-source';
-import { OpApp, PayOrder, RefundOrder, TransferOrder, MchInfo } from '../../database/entities';
+import { AppDataSource } from '../../../config/data-source';
+import { OpApp, PayOrder, RefundOrder, TransferOrder } from '../../../database/entities';
 
 const router = Router();
 
@@ -268,7 +268,7 @@ router.post(
         orderNo,
         mchNo,
         appId,
-        payType,
+        payType: payType as any,
         amount: parseInt(amount) / 100, // 分转元
         actualAmount: parseInt(amount) / 100,
         subject,
@@ -276,11 +276,9 @@ router.post(
         clientIp,
         attach,
         notifyUrl,
-        returnUrl,
         status: 0,
         expireTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
         createTime: new Date(),
-        updateTime: new Date(),
       });
       await orderRepo.save(order);
 

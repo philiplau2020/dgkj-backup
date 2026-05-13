@@ -168,6 +168,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Statistic, Row, Col, RangePicker, Modal, Descriptions, DescriptionsItem, InputNumber, Textarea } from 'ant-design-vue';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -241,28 +242,19 @@ function getStatusName(status: number) {
 async function fetchData() {
   loading.value = true;
   try {
-    const params = new URLSearchParams({
-      page: pagination.current.toString(),
-      pageSize: pagination.pageSize.toString(),
-    });
-    if (searchForm.orderNo) params.append('orderNo', searchForm.orderNo);
-    if (searchForm.mchNo) params.append('mchNo', searchForm.mchNo);
-    if (searchForm.status !== undefined) params.append('status', searchForm.status.toString());
-    if (searchForm.payChannel) params.append('payChannel', searchForm.payChannel);
+    const params: any = {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    };
+    if (searchForm.orderNo) params.orderNo = searchForm.orderNo;
+    if (searchForm.mchNo) params.mchNo = searchForm.mchNo;
+    if (searchForm.status !== undefined) params.status = searchForm.status;
+    if (searchForm.payChannel) params.payChannel = searchForm.payChannel;
 
-    const res = await fetch(`/basic-api/order/list?${params}`);
-    const data = await res.json();
-    
-    if (data.result) {
-      dataSource.value = data.result.list || [];
-      pagination.total = data.result.total || 0;
-    }
-
-    // 获取统计数据
-    const statsRes = await fetch('/basic-api/order/stats');
-    const statsData = await statsRes.json();
-    if (statsData.result) {
-      Object.assign(stats, statsData.result);
+    const res = await defHttp.get({ url: '/basic-api/order/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
     }
   } catch (error) {
     console.error('获取数据失败', error);
@@ -273,10 +265,9 @@ async function fetchData() {
 
 async function fetchStats() {
   try {
-    const res = await fetch('/basic-api/order/stats');
-    const data = await res.json();
-    if (data.result) {
-      Object.assign(stats, data.result);
+    const res = await defHttp.get({ url: '/basic-api/order/stats' });
+    if (res) {
+      Object.assign(stats, res);
     }
   } catch (error) {
     console.error('获取统计数据失败', error);
@@ -326,7 +317,6 @@ async function handleRefundSubmit() {
 }
 
 function handleClose(order: any) {
-  // 关闭订单逻辑
   message.info('关闭订单功能开发中');
 }
 

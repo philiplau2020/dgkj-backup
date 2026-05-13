@@ -41,6 +41,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { Card, Table, Form, FormItem, Input, Button, Space, Row, Col, Statistic, DatePicker } from 'ant-design-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -63,23 +64,26 @@ const columns = [
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 20; i++) {
-      const tradeAmount = (Math.random() * 100000 + 10000).toFixed(2);
-      const refundAmount = (Math.random() * 5000).toFixed(2);
-      const tradeCount = Math.floor(Math.random() * 500) + 100;
-      const successCount = Math.floor(tradeCount * (0.9 + Math.random() * 0.1));
-      mockData.push({
-        id: i, date: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
-        agentName: ['代理商A', '代理商B', '代理商C'][i % 3], agentNo: ['A10001', 'A10002', 'A10003'][i % 3],
-        tradeAmount, refundAmount, tradeCount, successCount, successRate: ((successCount / tradeCount) * 100).toFixed(2),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.agentName) params.agentName = searchForm.agentName;
+    
+    const res = await defHttp.get({ url: '/basic-api/stat/agent/list', params });
+    if (res && res.data) {
+      dataSource.value = res.data;
+      pagination.total = res.total || 0;
+      stats.totalAgent = dataSource.value.length;
+      stats.totalAmount = dataSource.value.reduce((sum, item) => sum + Number(item.tradeAmount), 0);
+      stats.refundAmount = dataSource.value.reduce((sum, item) => sum + Number(item.refundAmount), 0);
+      const totalCount = dataSource.value.reduce((sum, item) => sum + item.tradeCount, 0);
+      const successCount = dataSource.value.reduce((sum, item) => sum + item.successCount, 0);
+      stats.successRate = totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(2) : 0;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
-    stats.totalAgent = mockData.length;
-    stats.totalAmount = mockData.reduce((sum, item) => sum + Number(item.tradeAmount), 0);
-    stats.refundAmount = mockData.reduce((sum, item) => sum + Number(item.refundAmount), 0);
-    stats.successRate = ((mockData.reduce((sum, item) => sum + item.successCount, 0) / mockData.reduce((sum, item) => sum + item.tradeCount, 0)) * 100).toFixed(2);
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

@@ -47,9 +47,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag, Pagination } from 'ant-design-vue';
+import { Card, Table, Form, FormItem, Input, Select, SelectOption, Button, Space, Tag } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defHttp } from '@/utils/http/axios';
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
@@ -70,20 +71,22 @@ const columns = [
 async function fetchData() {
   loading.value = true;
   try {
-    const mockData = [];
-    for (let i = 1; i <= 50; i++) {
-      const billType = Math.random() > 0.9 ? 2 : 1;
-      mockData.push({
-        id: i, batchNo: 'BATCH' + new Date().toISOString().split('T')[0].replace(/-/g, '') + '001',
-        orderNo: 'P' + Date.now().toString().slice(0, 10) + i,
-        ifCode: ['CITIC_QR', 'WX_QR', 'ALI_QR'][i % 3], ifCodeName: ['中信银行', '微信', '支付宝'][i % 3],
-        billType, billTypeName: billType === 1 ? '交易' : '退款',
-        amount: (Math.random() * 1000 + 10).toFixed(2), fee: (Math.random() * 10 + 1).toFixed(2),
-        tradeStatus: Math.random() > 0.05 ? 1 : 0, tradeStatusName: Math.random() > 0.05 ? '成功' : '失败',
-        tradeTime: new Date(Date.now() - Math.random() * 86400000).toISOString().replace('T', ' ').slice(0, 19),
-      });
+    const params: any = { page: pagination.current, pageSize: pagination.pageSize };
+    if (searchForm.batchNo) params.batchNo = searchForm.batchNo;
+    if (searchForm.ifCode) params.ifCode = searchForm.ifCode;
+    if (searchForm.billType !== undefined) params.billType = searchForm.billType;
+    
+    const res = await defHttp.get({ url: '/basic-api/check/channel-bill/list', params });
+    if (res) {
+      dataSource.value = res.list || [];
+      pagination.total = res.total || 0;
+    } else {
+      dataSource.value = [];
+      pagination.total = 0;
     }
-    dataSource.value = mockData; pagination.total = mockData.length;
+  } catch (e) {
+    dataSource.value = [];
+    pagination.total = 0;
   } finally { loading.value = false; }
 }
 

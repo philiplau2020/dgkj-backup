@@ -7,51 +7,51 @@ const router = Router();
 router.use(authGuard);
 
 // ========== 账户管理 ==========
-router.get('/account/list', citicController.getAccountList);
-router.get('/account/info', citicController.getAccountInfo);
-router.get('/account/stats', citicController.getAccountStats);
-router.get('/account/balance', citicController.queryBalance);
-router.get('/account/records', citicController.getAccountRecords);
-router.post('/account/register', citicController.registerAccount);
-router.post('/account', citicController.registerAccount);
-router.put('/account/:id', citicController.updateAccount);
+router.get('/account/list', citicController.getAccountList.bind(citicController));
+router.get('/account/info', citicController.getAccountInfo.bind(citicController));
+router.get('/account/stats', citicController.getAccountStats.bind(citicController));
+router.get('/account/balance', citicController.queryBalance.bind(citicController));
+router.get('/account/records', citicController.getAccountRecords.bind(citicController));
+router.post('/account/register', citicController.registerAccount.bind(citicController));
+router.post('/account', citicController.registerAccount.bind(citicController));
+router.put('/account/:id', citicController.updateAccount.bind(citicController));
 
 // ========== 银行卡管理 ==========
-router.get('/card/list', citicController.getCardList);
-router.post('/card/bind', citicController.bindCard);
-router.post('/card/unbind', citicController.unbindCard);
-router.post('/card', citicController.bindCard);
-router.delete('/card/:id', citicController.deleteCard);
+router.get('/card/list', citicController.getCardList.bind(citicController));
+router.post('/card/bind', citicController.bindCard.bind(citicController));
+router.post('/card/unbind', citicController.unbindCard.bind(citicController));
+router.post('/card', citicController.bindCard.bind(citicController));
+router.delete('/card/:id', citicController.deleteCard.bind(citicController));
 
 // ========== 资金归集 ==========
-router.get('/collection/list', citicController.getCollectionList);
-router.post('/collection/set', citicController.setCollection);
-router.post('/collection/active', citicController.activeCollection);
-router.delete('/collection/:id', citicController.deleteCollection);
+router.get('/collection/list', citicController.getCollectionList.bind(citicController));
+router.post('/collection/set', citicController.setCollection.bind(citicController));
+router.post('/collection/active', citicController.activeCollection.bind(citicController));
+router.delete('/collection/:id', citicController.deleteCollection.bind(citicController));
 
 // ========== 余额分账 ==========
-router.get('/profit-share/list', citicController.getProfitShareList);
-router.post('/profit-share/execute', citicController.executeProfitShare);
-router.delete('/profit-share/:id', citicController.deleteProfitShare);
+router.get('/profit-share/list', citicController.getProfitShareList.bind(citicController));
+router.post('/profit-share/execute', citicController.executeProfitShare.bind(citicController));
+router.delete('/profit-share/:id', citicController.deleteProfitShare.bind(citicController));
 
 // ========== 代付打款 ==========
-router.get('/transfer/list', citicController.getTransferList);
-router.post('/transfer/pay', citicController.createTransfer);
-router.get('/transfer/query', citicController.queryTransfer);
-router.post('/transfer/confirm', citicController.confirmTransfer);
+router.get('/transfer/list', citicController.getTransferList.bind(citicController));
+router.post('/transfer/pay', citicController.createTransfer.bind(citicController));
+router.get('/transfer/query', citicController.queryTransfer.bind(citicController));
+router.post('/transfer/confirm', citicController.confirmTransfer.bind(citicController));
 
 // ========== 结算管理 ==========
-router.get('/settlement/list', citicController.getSettlementList);
-router.post('/settlement/apply', citicController.applySettlement);
-router.post('/settlement/confirm', citicController.confirmSettlement);
-router.post('/settlement/cancel', citicController.cancelSettlement);
+router.get('/settlement/list', citicController.getSettlementList.bind(citicController));
+router.post('/settlement/apply', citicController.applySettlement.bind(citicController));
+router.post('/settlement/confirm', citicController.confirmSettlement.bind(citicController));
+router.post('/settlement/cancel', citicController.cancelSettlement.bind(citicController));
 
 // ========== 对账管理 ==========
-router.get('/check/list', citicController.getCheckList);
-router.post('/check/trigger', citicController.triggerCheck);
-router.get('/check/download', citicController.downloadCheckBill);
-router.get('/check/diff/list', citicController.getCheckDiffList);
-router.post('/check/diff/confirm', citicController.confirmCheckDiff);
+router.get('/check/list', citicController.getCheckList.bind(citicController));
+router.post('/check/trigger', citicController.triggerCheck.bind(citicController));
+router.get('/check/download', citicController.downloadCheckBill.bind(citicController));
+router.get('/check/diff/list', citicController.getCheckDiffList.bind(citicController));
+router.post('/check/diff/confirm', citicController.confirmCheckDiff.bind(citicController));
 
 // ========== 自动调度服务 ==========
 router.post('/auto/check', async (req, res, next) => {

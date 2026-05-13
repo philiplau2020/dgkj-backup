@@ -390,20 +390,142 @@ export class SysController {
   // ============== Config Management ==============
   async getConfigList(req: Request, res: Response, next: NextFunction) {
     try {
-      const configs = await this.configRepo.find();
-      res.json({ code: 0, message: 'success', data: configs, timestamp: new Date().toISOString() });
+      const { page = 1, pageSize = 10, configName, configKey, groupName, status } = req.query;
+      const skip = (Number(page) - 1) * Number(pageSize);
+      const queryBuilder = this.configRepo.createQueryBuilder('config');
+
+      if (configName) queryBuilder.andWhere('config.configName LIKE :configName', { configName: `%${configName}%` });
+      if (configKey) queryBuilder.andWhere('config.configKey LIKE :configKey', { configKey: `%${configKey}%` });
+      if (groupName) queryBuilder.andWhere('config.groupName = :groupName', { groupName });
+      if (status !== undefined) queryBuilder.andWhere('config.status = :status', { status });
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('config.updateTime', 'DESC')
+        .getManyAndCount();
+
+      res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
   }
 
-  async updateConfig(req: Request, res: Response, next: NextFunction) {
+  // 获取所有分组列表
+  async getConfigGroups(req: Request, res: Response, next: NextFunction) {
     try {
-      const { configKey, configValue } = req.body;
+      const groups = await this.configRepo
+        .createQueryBuilder('config')
+        .select('DISTINCT config.groupName', 'groupName')
+        .getRawMany();
+      
+      const groupList = groups.map(g => g.groupName).filter(Boolean);
+      res.json({ code: 0, message: 'success', data: groupList, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 根据键名获取配置
+  async getConfigByKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { configKey } = req.params;
       const config = await this.configRepo.findOne({ where: { configKey } });
-      if (config) {
-        await this.configRepo.update(config.id, { configValue, updateTime: new Date() });
+      
+      if (!config) {
+        return res.status(404).json({ code: 404, message: '配置不存在', data: null, timestamp: new Date().toISOString() });
       }
+
+      res.json({ code: 0, message: 'success', data: config, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createConfig(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { configName, configKey, configValue, configType, groupName, remark, status } = req.body;
+      
+      // 检查键名是否已存在
+      const existing = await this.configRepo.findOne({ where: { configKey } });
+      if (existing) {
+        return res.status(400).json({ code: 400, message: '配置键名已存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      const config = this.configRepo.create({
+        id: uuidv4(),
+        configName,
+        configKey,
+        configValue,
+        configType,
+        groupName,
+        remark,
+        status: status ?? 1,
+        createTime: new Date(),
+        updateTime: new Date(),
+      });
+      await this.configRepo.save(config);
+      res.json({ code: 0, message: '创建成功', data: config, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateConfigById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { configName, configKey, configValue, configType, groupName, remark, status } = req.body;
+      
+      const existing = await this.configRepo.findOne({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ code: 404, message: '配置不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      await this.configRepo.update(id, {
+        configName, configKey, configValue, configType, groupName, remark, status, updateTime: new Date()
+      });
+      res.json({ code: 0, message: '更新成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteConfig(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.configRepo.delete(id);
+      res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 批量删除配置
+  async batchDeleteConfig(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ code: 400, message: '请选择要删除的配置', data: null, timestamp: new Date().toISOString() });
+      }
+      await this.configRepo.delete(ids);
+      res.json({ code: 0, message: '批量删除成功', data: { count: ids.length }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 根据键名更新配置值（内置配置）
+  async updateConfigByKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { configKey } = req.params;
+      const { configValue } = req.body;
+
+      const config = await this.configRepo.findOne({ where: { configKey } });
+      if (!config) {
+        return res.status(404).json({ code: 404, message: '配置不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      await this.configRepo.update(config.id, { configValue, updateTime: new Date() });
       res.json({ code: 0, message: '更新成功', data: null, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
@@ -413,13 +535,146 @@ export class SysController {
   // ============== Log Management ==============
   async getLogList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, pageSize = 10, username, operation } = req.query;
+      const { page = 1, pageSize = 10, username, operation, status, startTime, endTime } = req.query;
       const skip = (Number(page) - 1) * Number(pageSize);
       const queryBuilder = this.logRepo.createQueryBuilder('log');
+
       if (username) queryBuilder.andWhere('log.username LIKE :username', { username: `%${username}%` });
       if (operation) queryBuilder.andWhere('log.operation LIKE :operation', { operation: `%${operation}%` });
-      const [list, total] = await queryBuilder.skip(skip).take(Number(pageSize)).orderBy('log.createTime', 'DESC').getManyAndCount();
+      if (status !== undefined) queryBuilder.andWhere('log.status = :status', { status });
+      if (startTime) queryBuilder.andWhere('log.createTime >= :startTime', { startTime });
+      if (endTime) queryBuilder.andWhere('log.createTime <= :endTime', { endTime });
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('log.createTime', 'DESC')
+        .getManyAndCount();
+
       res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 获取日志详情
+  async getLogById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const log = await this.logRepo.findOne({ where: { id } });
+
+      if (!log) {
+        return res.status(404).json({ code: 404, message: '日志不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      res.json({ code: 0, message: 'success', data: log, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 清理日志
+  async cleanLogs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { type, days, keepCount } = req.body;
+
+      let deletedCount = 0;
+
+      switch (type) {
+        case 'days':
+          // 删除多少天前的日志
+          const daysAgo = new Date();
+          daysAgo.setDate(daysAgo.getDate() - (days || 30));
+          const deleteResult = await this.logRepo.createQueryBuilder('log')
+            .where('log.createTime < :daysAgo', { daysAgo })
+            .delete()
+            .execute();
+          deletedCount = deleteResult.affected || 0;
+          break;
+        case 'size':
+          // 保留多少条记录，删除多余的
+          const totalCount = await this.logRepo.count();
+          if (totalCount > (keepCount || 10000)) {
+            const idsToDelete = await this.logRepo
+              .createQueryBuilder('log')
+              .select('log.id')
+              .orderBy('log.createTime', 'DESC')
+              .skip(keepCount || 10000)
+              .getMany();
+            const ids = idsToDelete.map(l => l.id);
+            if (ids.length > 0) {
+              const result = await this.logRepo.delete(ids);
+              deletedCount = result.affected || 0;
+            }
+          }
+          break;
+        case 'all':
+          // 删除所有日志
+          const allResult = await this.logRepo.delete({});
+          deletedCount = allResult.affected || 0;
+          break;
+        default:
+          return res.status(400).json({ code: 400, message: '无效的清理类型', data: null, timestamp: new Date().toISOString() });
+      }
+
+      res.json({ code: 0, message: '清理成功', data: { deletedCount }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 导出日志
+  async exportLogs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { username, operation, status, startTime, endTime, format = 'json' } = req.query;
+      const queryBuilder = this.logRepo.createQueryBuilder('log');
+
+      if (username) queryBuilder.andWhere('log.username LIKE :username', { username: `%${username}%` });
+      if (operation) queryBuilder.andWhere('log.operation LIKE :operation', { operation: `%${operation}%` });
+      if (status !== undefined) queryBuilder.andWhere('log.status = :status', { status });
+      if (startTime) queryBuilder.andWhere('log.createTime >= :startTime', { startTime });
+      if (endTime) queryBuilder.andWhere('log.createTime <= :endTime', { endTime });
+
+      const logs = await queryBuilder.orderBy('log.createTime', 'DESC').limit(10000).getMany();
+
+      if (format === 'csv') {
+        const headers = ['ID', '用户名', '操作', '方法', 'URL', 'IP', '状态', '耗时(ms)', '创建时间'];
+        const csvRows = [headers.join(',')];
+        for (const log of logs) {
+          csvRows.push([
+            log.id,
+            log.username,
+            log.operation,
+            log.method,
+            log.url,
+            log.ip,
+            log.status,
+            log.duration,
+            log.createTime,
+          ].map(v => `"${v || ''}"`).join(','));
+        }
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=sys_log_${Date.now()}.csv`);
+        res.send(csvRows.join('\n'));
+      } else {
+        res.json({ code: 0, message: 'success', data: logs, timestamp: new Date().toISOString() });
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 获取操作类型统计
+  async getLogStatistics(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await this.logRepo
+        .createQueryBuilder('log')
+        .select('log.operation', 'operation')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('log.operation')
+        .getRawMany();
+
+      res.json({ code: 0, message: 'success', data: stats, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
@@ -428,10 +683,39 @@ export class SysController {
   // ============== Notice Management ==============
   async getNoticeList(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, pageSize = 10 } = req.query;
+      const { page = 1, pageSize = 10, title, noticeType, scope, status } = req.query;
       const skip = (Number(page) - 1) * Number(pageSize);
-      const [list, total] = await this.noticeRepo.findAndCount({ skip, take: Number(pageSize), order: { createTime: 'DESC' } });
+      const queryBuilder = this.noticeRepo.createQueryBuilder('notice');
+
+      if (title) queryBuilder.andWhere('notice.noticeTitle LIKE :title', { title: `%${title}%` });
+      if (noticeType !== undefined) queryBuilder.andWhere('notice.noticeType = :noticeType', { noticeType });
+      if (scope !== undefined) queryBuilder.andWhere('notice.scope & :scope > 0', { scope: Number(scope) });
+      if (status !== undefined) queryBuilder.andWhere('notice.status = :status', { status });
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('notice.isTop', 'DESC')
+        .addOrderBy('notice.createTime', 'DESC')
+        .getManyAndCount();
+
       res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 获取公告详情
+  async getNoticeById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const notice = await this.noticeRepo.findOne({ where: { id } });
+
+      if (!notice) {
+        return res.status(404).json({ code: 404, message: '公告不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      res.json({ code: 0, message: 'success', data: notice, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }
@@ -439,8 +723,18 @@ export class SysController {
 
   async createNotice(req: Request, res: Response, next: NextFunction) {
     try {
-      const { noticeTitle, noticeType, noticeContent, status } = req.body;
-      const notice = this.noticeRepo.create({ id: uuidv4(), noticeTitle, noticeType, noticeContent, status, createTime: new Date(), updateTime: new Date() });
+      const { noticeTitle, noticeType, noticeContent, scope, status, isTop } = req.body;
+      const notice = this.noticeRepo.create({
+        id: uuidv4(),
+        noticeTitle,
+        noticeType,
+        noticeContent,
+        scope: scope || 1,
+        status: status ?? 1,
+        isTop: isTop ? 1 : 0,
+        createTime: new Date(),
+        updateTime: new Date(),
+      });
       await this.noticeRepo.save(notice);
       res.json({ code: 0, message: '创建成功', data: notice, timestamp: new Date().toISOString() });
     } catch (error) {
@@ -451,8 +745,22 @@ export class SysController {
   async updateNotice(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { noticeTitle, noticeType, noticeContent, status } = req.body;
-      await this.noticeRepo.update(id, { noticeTitle, noticeType, noticeContent, status, updateTime: new Date() });
+      const { noticeTitle, noticeType, noticeContent, scope, status, isTop } = req.body;
+      
+      const notice = await this.noticeRepo.findOne({ where: { id } });
+      if (!notice) {
+        return res.status(404).json({ code: 404, message: '公告不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      await this.noticeRepo.update(id, {
+        noticeTitle,
+        noticeType,
+        noticeContent,
+        scope,
+        status,
+        isTop: isTop ? 1 : 0,
+        updateTime: new Date(),
+      });
       res.json({ code: 0, message: '更新成功', data: null, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
@@ -464,6 +772,85 @@ export class SysController {
       const { id } = req.params;
       await this.noticeRepo.delete(id);
       res.json({ code: 0, message: '删除成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 批量删除公告
+  async batchDeleteNotice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ code: 400, message: '请选择要删除的公告', data: null, timestamp: new Date().toISOString() });
+      }
+      await this.noticeRepo.delete(ids);
+      res.json({ code: 0, message: '批量删除成功', data: { count: ids.length }, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 切换置顶状态
+  async toggleTop(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const notice = await this.noticeRepo.findOne({ where: { id } });
+      
+      if (!notice) {
+        return res.status(404).json({ code: 404, message: '公告不存在', data: null, timestamp: new Date().toISOString() });
+      }
+
+      await this.noticeRepo.update(id, { isTop: notice.isTop === 1 ? 0 : 1, updateTime: new Date() });
+      res.json({ code: 0, message: '操作成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 发布公告
+  async publishNotice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.noticeRepo.update(id, { status: 1, updateTime: new Date() });
+      res.json({ code: 0, message: '发布成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 撤回公告
+  async revokeNotice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await this.noticeRepo.update(id, { status: 0, updateTime: new Date() });
+      res.json({ code: 0, message: '撤回成功', data: null, timestamp: new Date().toISOString() });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 获取已发布的公告（商户/代理端使用）
+  async getPublishedNotices(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { scope, page = 1, pageSize = 10 } = req.query;
+      const skip = (Number(page) - 1) * Number(pageSize);
+      
+      const queryBuilder = this.noticeRepo.createQueryBuilder('notice');
+      queryBuilder.where('notice.status = :status', { status: 1 });
+      
+      if (scope !== undefined) {
+        queryBuilder.andWhere('notice.scope & :scope > 0', { scope: Number(scope) });
+      }
+
+      const [list, total] = await queryBuilder
+        .skip(skip)
+        .take(Number(pageSize))
+        .orderBy('notice.isTop', 'DESC')
+        .addOrderBy('notice.createTime', 'DESC')
+        .getManyAndCount();
+
+      res.json({ code: 0, message: 'success', data: { list, total }, timestamp: new Date().toISOString() });
     } catch (error) {
       next(error);
     }

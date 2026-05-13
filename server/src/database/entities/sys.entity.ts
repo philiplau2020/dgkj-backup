@@ -172,6 +172,7 @@ export class SysMenu {
 }
 
 @Entity('sys_user_role')
+@Entity('sys_user_role')
 export class SysUserRole {
   @PrimaryColumn({ name: 'user_id', length: 64 })
   userId: string;
@@ -269,8 +270,14 @@ export class SysConfig {
   @Column({ name: 'config_type', length: 32, nullable: true })
   configType: string;
 
-  @Column({ name: 'remark', length: 255, nullable: true })
+  @Column({ name: 'group_name', length: 64, nullable: true })
+  groupName: string;
+
+  @Column({ length: 255, nullable: true })
   remark: string;
+
+  @Column({ default: 1 })
+  status: number;
 
   @Column({ name: 'create_time' })
   createTime: Date;
@@ -337,6 +344,15 @@ export class SysNotice {
 
   @Column({ name: 'notice_content', type: 'text' })
   noticeContent: string;
+
+  @Column({ type: 'int', default: 1 })
+  scope: number;
+
+  @Column({ type: 'tinyint', default: 0 })
+  isTop: number;
+
+  @Column({ name: 'publisher', length: 64, nullable: true })
+  publisher: string;
 
   @Column({ name: 'status', type: 'tinyint', default: 1 })
   status: number;
