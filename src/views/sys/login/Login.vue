@@ -30,11 +30,11 @@
           >
             <!-- 角色选择 -->
             <div class="role-selector enter-x">
-              <RadioGroup v-model:value="selectedRole" button-style="solid" size="large">
-                <RadioButton value="admin">运营后台</RadioButton>
-                <RadioButton value="agent">代理商后台</RadioButton>
-                <RadioButton value="mch">商户后台</RadioButton>
-              </RadioGroup>
+              <Select v-model:value="selectedRole" size="large" style="width: 200px">
+                <SelectOption value="admin">运营后台</SelectOption>
+                <SelectOption value="agent">代理商后台</SelectOption>
+                <SelectOption value="mch">商户后台</SelectOption>
+              </Select>
             </div>
 
             <!-- 标题 -->
@@ -114,13 +114,12 @@ import { useDesign } from '@/hooks/web/useDesign';
 import { useI18n } from '@/hooks/web/useI18n';
 
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
-import { Checkbox, Form, Input, Button, Modal, Radio, message } from 'ant-design-vue';
+import { Checkbox, Form, Input, Button, Modal, Select, message } from 'ant-design-vue';
 
 import { useUserStore } from '@/store/modules/user';
 import { useFormRules, useFormValid } from './useLogin';
 
-const RadioGroup = Radio.Group;
-const RadioButton = Radio.Button;
+const SelectOption = Select.Option;
 const FormItem = Form.Item;
 const InputPassword = Input.Password;
 
@@ -320,16 +319,6 @@ html[data-theme='dark'] {
     .role-selector {
       text-align: center;
       margin-bottom: 20px;
-
-      .ant-radio-group {
-        display: inline-flex;
-
-        .ant-radio-button-wrapper {
-          padding: 0 24px;
-          height: 40px;
-          line-height: 38px;
-        }
-      }
     }
 
     input:not([type='checkbox']) {
